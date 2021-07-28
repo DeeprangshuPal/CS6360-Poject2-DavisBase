@@ -222,8 +222,23 @@ public class DavisBasePromptExample {
 	 *  @param dropTableString is a String of the user input
 	 */
 	public static void dropTable(String dropTableString) {
-		System.out.println("STUB: This is the dropTable method.");
-		System.out.println("\tParsing the string:\"" + dropTableString + "\"");
+		String s = dropTableString;
+		s = s.replace("("," ");
+		s = s.replace(")"," ");
+
+		ArrayList<String> dropTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
+
+		/* Define table file name */
+		String tableFileName = "data/"+dropTableTokens.get(2) + ".tbl";
+
+		/*  Code to create a .tbl file to contain table data */
+		try {
+			File del = new File(tableFileName);
+			del.delete();
+		}
+		catch(Exception e) {
+			System.out.println(e);
+		}
 	}
 	
 	/**
@@ -293,6 +308,8 @@ public class DavisBasePromptExample {
 				tableFile.writeInt(0x00000000); // Page number of sibling to the right (in creation there is no sibling)
 				tableFile.writeInt(0xFFFFFFFF); // Page number of parent (This is the root page so no parent [-1])
 				tableFile.writeByte(0x00); // Unused byte
+
+				tableFile.close();
 			}
 			else{
 				out.println("Table name is taken");
