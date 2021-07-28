@@ -47,6 +47,9 @@ public class DavisBasePromptExample {
 		/* Display the welcome screen */
 		splashScreen();
 
+		/* This method will initialize the database storage if it doesn't exit */
+		initializeDataStore();
+
 		/* Variable to collect user input from the prompt */
 		String userCommand = ""; 
 
@@ -254,4 +257,72 @@ public class DavisBasePromptExample {
 		 *  i.e. database catalog meta-data 
 		 */
 	}
+
+	static void initializeDataStore() {
+
+		/** Create data directory at the current OS location to hold */
+		try {
+			File dataDir = new File("data");
+			if(!dataDir.exists()){
+				dataDir.mkdir();
+				String[] oldTableFiles;
+				oldTableFiles = dataDir.list();
+				for (int i=0; i<oldTableFiles.length; i++) {
+					File anOldFile = new File(dataDir, oldTableFiles[i]);
+					anOldFile.delete();
+				}
+			}
+		}
+		catch (SecurityException se) {
+			out.println("Unable to create data container directory");
+			out.println(se);
+		}
+
+		/** Create davisbase_tables system catalog */
+		try {
+			File tablesCatalog = new File("data/davisbase_tables.tbl");
+			if(!tablesCatalog.exists()){
+				RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/davisbase_tables.tbl", "rw");
+				/* Initially, the file is one page in length */
+				davisbaseTablesCatalog.setLength(pageSize);
+				/* Set file pointer to the beginnning of the file */
+				davisbaseTablesCatalog.seek(0);
+				/* Write 0x0D to the page header to indicate that it's a leaf page.
+				 * The file pointer will automatically increment to the next byte. */
+				davisbaseTablesCatalog.write(0x0D);
+				/* Write 0x00 (although its value is already 0x00) to indicate there
+				 * are no cells on this page */
+				davisbaseTablesCatalog.write(0x00);
+				davisbaseTablesCatalog.close();
+			}
+		}
+		catch (Exception e) {
+			out.println("Unable to create the database_tables file");
+			out.println(e);
+		}
+
+		/** Create davisbase_columns systems catalog */
+		try {
+			File columnsCatalog = new File("data/davisbase_columns.tbl");
+
+			if(!columnsCatalog.exists()){
+				RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
+				/** Initially the file is one page in length */
+				davisbaseColumnsCatalog.setLength(pageSize);
+				davisbaseColumnsCatalog.seek(0);       // Set file pointer to the beginnning of the file
+				/* Write 0x0D to the page header to indicate a leaf page. The file
+				 * pointer will automatically increment to the next byte. */
+				davisbaseColumnsCatalog.write(0x0D);
+				/* Write 0x00 (although its value is already 0x00) to indicate there
+				 * are no cells on this page */
+				davisbaseColumnsCatalog.write(0x00);
+				davisbaseColumnsCatalog.close();
+			}
+		}
+		catch (Exception e) {
+			out.println("Unable to create the database_columns file");
+			out.println(e);
+		}
+	}
+
 }
