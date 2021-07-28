@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
@@ -5,6 +7,8 @@ import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.regex.Pattern;
+
 import static java.lang.System.out;
 
 /**
@@ -18,6 +22,28 @@ import static java.lang.System.out;
  *
  */
 public class DavisBasePromptExample {
+
+	/* Variables for all Hexadecimal Meanings*/
+
+	//Type of page
+	final static int b_tree_index_interior_page = 0x02;
+	final static int b_tree_table_interior_page = 0x05;
+	final static int b_tree_index_leaf_page = 0x0a;
+	final static int b_tree_table_leaf_page = 0x0d;
+
+	//Data types
+	final static int NULL = 0x00;
+	final static int TINYINT = 0x01;
+	final static int SMALLINT = 0x02;
+	final static int INT = 0x03;
+	final static int BIGINT_LONG = 0x04;
+	final static int FLOAT = 0x05;
+	final static int DOUBLE = 0x06;
+	final static int YEAR = 0x08;
+	final static int TIME = 0x09;
+	final static int DATETIME = 0x0A;
+	final static int DATE = 0x0B;
+	final static int TEXT = 0x0C; //+n
 
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
@@ -224,25 +250,53 @@ public class DavisBasePromptExample {
 	 *  @param queryString is a String of the user input
 	 */
 	public static void parseCreateTable(String createTableString) {
-		
-		System.out.println("STUB: Calling your method to create a table");
-		System.out.println("Parsing the string:\"" + createTableString + "\"");
-		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
+		String s = createTableString;
+		s = s.replace("("," ");
+		s = s.replace(")"," ");
+
+		ArrayList<String> col_names = new ArrayList<>();
+
+		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
 
 		/* Define table file name */
-		String tableFileName = createTableTokens.get(2) + ".tbl";
+		String tableFileName = "data/"+createTableTokens.get(2) + ".tbl";
 
 		/* YOUR CODE GOES HERE */
-		
+		ArrayList<String> col_types = new ArrayList<>();
+
+		try{
+			for(int i = 3; i < createTableTokens.size(); i+=2){
+				col_names.add(createTableTokens.get(i));
+				col_types.add(createTableTokens.get(i+1));
+			}
+		}
+		catch(Exception e){
+			out.println("Error :  did not define data types for all columns");
+			return;
+		}
+
 		/*  Code to create a .tbl file to contain table data */
 		try {
 			/*  Create RandomAccessFile tableFile in read-write mode.
 			 *  Note that this doesn't create the table file in the correct directory structure
 			 */
-			RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
-			tableFile.setLength(pageSize);
-			tableFile.seek(0);
-			tableFile.writeInt(63);
+			File f = new File(tableFileName);
+			if(!f.exists()){
+				RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
+				tableFile.setLength(pageSize);
+				tableFile.seek(0);
+
+				tableFile.writeByte(b_tree_table_leaf_page); // First byte of header, states this is a leaf node page
+				tableFile.writeByte(0x00); // Unused byte
+				tableFile.writeShort(0x0000); // Number of cells on the page, 2 byte int (short)
+				tableFile.writeShort(0x0000); // Start of the cell content area (by default 0x00 = 65536)
+				tableFile.writeInt(0x00000000); // Page number of sibling to the right (in creation there is no sibling)
+				tableFile.writeInt(0xFFFFFFFF); // Page number of parent (This is the root page so no parent [-1])
+				tableFile.writeByte(0x00); // Unused byte
+			}
+			else{
+				out.println("Table name is taken");
+			}
 		}
 		catch(Exception e) {
 			System.out.println(e);
