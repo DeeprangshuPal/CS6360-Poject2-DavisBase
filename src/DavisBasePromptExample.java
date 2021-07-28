@@ -358,12 +358,15 @@ public class DavisBasePromptExample {
 				davisbaseTablesCatalog.setLength(pageSize);
 				/* Set file pointer to the beginnning of the file */
 				davisbaseTablesCatalog.seek(0);
-				/* Write 0x0D to the page header to indicate that it's a leaf page.
-				 * The file pointer will automatically increment to the next byte. */
-				davisbaseTablesCatalog.write(0x0D);
-				/* Write 0x00 (although its value is already 0x00) to indicate there
-				 * are no cells on this page */
-				davisbaseTablesCatalog.write(0x00);
+
+				davisbaseTablesCatalog.writeByte(b_tree_table_leaf_page); // First byte of header, states this is a leaf node page
+				davisbaseTablesCatalog.writeByte(0x00); // Unused byte
+				davisbaseTablesCatalog.writeShort(0x0000); // Number of cells on the page, 2 byte int (short)
+				davisbaseTablesCatalog.writeShort(0x0000); // Start of the cell content area (by default 0x00 = 65536)
+				davisbaseTablesCatalog.writeInt(0x00000000); // Page number of sibling to the right (in creation there is no sibling)
+				davisbaseTablesCatalog.writeInt(0xFFFFFFFF); // Page number of parent (This is the root page so no parent [-1])
+				davisbaseTablesCatalog.writeByte(0x00); // Unused byte
+
 				davisbaseTablesCatalog.close();
 			}
 		}
@@ -380,13 +383,17 @@ public class DavisBasePromptExample {
 				RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
 				/** Initially the file is one page in length */
 				davisbaseColumnsCatalog.setLength(pageSize);
-				davisbaseColumnsCatalog.seek(0);       // Set file pointer to the beginnning of the file
-				/* Write 0x0D to the page header to indicate a leaf page. The file
-				 * pointer will automatically increment to the next byte. */
-				davisbaseColumnsCatalog.write(0x0D);
-				/* Write 0x00 (although its value is already 0x00) to indicate there
-				 * are no cells on this page */
-				davisbaseColumnsCatalog.write(0x00);
+
+				davisbaseColumnsCatalog.seek(0);
+
+				davisbaseColumnsCatalog.writeByte(b_tree_table_leaf_page); // First byte of header, states this is a leaf node page
+				davisbaseColumnsCatalog.writeByte(0x00); // Unused byte
+				davisbaseColumnsCatalog.writeShort(0x0000); // Number of cells on the page, 2 byte int (short)
+				davisbaseColumnsCatalog.writeShort(0x0000); // Start of the cell content area (by default 0x00 = 65536)
+				davisbaseColumnsCatalog.writeInt(0x00000000); // Page number of sibling to the right (in creation there is no sibling)
+				davisbaseColumnsCatalog.writeInt(0xFFFFFFFF); // Page number of parent (This is the root page so no parent [-1])
+				davisbaseColumnsCatalog.writeByte(0x00); // Unused byte
+
 				davisbaseColumnsCatalog.close();
 			}
 		}
