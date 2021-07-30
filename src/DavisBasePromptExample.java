@@ -26,24 +26,24 @@ public class DavisBasePromptExample {
 	/* Variables for all Hexadecimal Meanings*/
 
 	//Type of page
-	final static int b_tree_index_interior_page = 0x02;
-	final static int b_tree_table_interior_page = 0x05;
-	final static int b_tree_index_leaf_page = 0x0a;
-	final static int b_tree_table_leaf_page = 0x0d;
+	final static byte b_tree_index_interior_page = 0x02;
+	final static byte b_tree_table_interior_page = 0x05;
+	final static byte b_tree_index_leaf_page = 0x0a;
+	final static byte b_tree_table_leaf_page = 0x0d;
 
 	//Data types
-	final static int NULL = 0x00;
-	final static int TINYINT = 0x01;
-	final static int SMALLINT = 0x02;
-	final static int INT = 0x03;
-	final static int BIGINT_LONG = 0x04;
-	final static int FLOAT = 0x05;
-	final static int DOUBLE = 0x06;
-	final static int YEAR = 0x08;
-	final static int TIME = 0x09;
-	final static int DATETIME = 0x0A;
-	final static int DATE = 0x0B;
-	final static int TEXT = 0x0C; //+n
+	final static byte NULL = 0x00;
+	final static byte TINYINT = 0x01;
+	final static byte SMALLINT = 0x02;
+	final static byte INT = 0x03;
+	final static byte BIGINT_LONG = 0x04;
+	final static byte FLOAT = 0x05;
+	final static byte DOUBLE = 0x06;
+	final static byte YEAR = 0x08;
+	final static byte TIME = 0x09;
+	final static byte DATETIME = 0x0A;
+	final static byte DATE = 0x0B;
+	final static byte TEXT = 0x0C; //+n
 
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
@@ -299,6 +299,11 @@ public class DavisBasePromptExample {
 			 */
 			File f = new File(tableFileName);
 			if(!f.exists()){
+
+				/*
+				* add to meta data first, if it fails don't create the table
+				*/
+
 				RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
 				tableFile.setLength(pageSize);
 				tableFile.seek(0);
@@ -331,6 +336,12 @@ public class DavisBasePromptExample {
 		 */
 	}
 
+	/**
+	 *  Method for inserting data into a table page
+	 *  @param pageNum is the number of the page to insert to
+	 *  @param fileName is the tbl file to insert to
+	 *  @param
+	 */
 	public static boolean insertIntoPage(int pageNum, String fileName){
 		return false;
 	}
