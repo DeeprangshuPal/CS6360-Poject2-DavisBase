@@ -3,6 +3,10 @@ import javafx.util.Pair;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.ArrayList;
@@ -22,6 +26,10 @@ import static java.lang.System.out;
  *
  */
 public class DavisBasePromptExample {
+
+	// Locations of meta data
+	final static String davisbase_columns = "data/davisbase_columns.tbl";
+	final static String davisbase_tables = "data/davisbase_tables.tbl";
 
 	/* Variables for all Hexadecimal Meanings*/
 
@@ -44,6 +52,9 @@ public class DavisBasePromptExample {
 	final static byte DATETIME = 0x0A;
 	final static byte DATE = 0x0B;
 	final static byte TEXT = 0x0C; //+n
+
+	// Keeps track of the next available row id
+	static int row_id = 1;
 
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
@@ -269,7 +280,6 @@ public class DavisBasePromptExample {
 		s = s.replace("("," ");
 		s = s.replace(")"," ");
 
-		ArrayList<String> col_names = new ArrayList<>();
 
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
 
@@ -277,9 +287,10 @@ public class DavisBasePromptExample {
 		String tableFileName = "data/"+createTableTokens.get(2) + ".tbl";
 
 		/* YOUR CODE GOES HERE */
-		ArrayList<String> col_types = new ArrayList<>();
+/*
+		ArrayList<insert_data> meta_data_to_insert = new ArrayList<insert_data>();
 
-		/*
+
 		try{
 			for(int i = 3; i < createTableTokens.size(); i+=2){
 				col_names.add(createTableTokens.get(i));
@@ -290,8 +301,8 @@ public class DavisBasePromptExample {
 			out.println("Error :  did not define data types for all columns");
 			return;
 		}
-		 */
 
+*/
 		/*  Code to create a .tbl file to contain table data */
 		try {
 			/*  Create RandomAccessFile tableFile in read-write mode.
@@ -303,6 +314,12 @@ public class DavisBasePromptExample {
 				/*
 				* add to meta data first, if it fails don't create the table
 				*/
+				// NOTE : THIS IS A PLACE HOLDER, RIGHT NOW THERE IS NO B+ TREE SO IT JUST ADDS TO THE FIRST PAGE
+				ArrayList<String> data = new ArrayList<String>();
+				data.add(createTableTokens.get(2));
+				ArrayList<String> data_type = new ArrayList<String>();
+				data_type.add("TEXT");
+				insertIntoPage(0,davisbase_tables,data_type,data);
 
 				RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
 				tableFile.setLength(pageSize);
@@ -339,11 +356,173 @@ public class DavisBasePromptExample {
 	/**
 	 *  Method for inserting data into a table page
 	 *  @param pageNum is the number of the page to insert to
-	 *  @param fileName is the tbl file to insert to
-	 *  @param
+	 *  @param fileLocation is the tbl file to insert to
+	 *  @param data_types : Type of data to be inserted
+	 *  @param data : The data to be inserted
 	 */
-	public static boolean insertIntoPage(int pageNum, String fileName){
-		return false;
+	public static boolean insertIntoPage(int pageNum, String fileLocation, ArrayList<String> data_types, ArrayList<String> data){
+		File f = new File(fileLocation);
+
+		if(!f.exists()){
+			out.println("Table does not exist");
+			return false;
+		}
+
+		if(data_types.size() != data.size()){
+			out.println("Not enough data types for all data");
+			return false;
+		}
+
+		long page_location = pageSize*pageNum;
+
+		try{
+			RandomAccessFile tableFile = new RandomAccessFile(fileLocation, "rw");
+
+			/* Load headers of the page*/
+			tableFile.seek(page_location);
+			byte page_type = tableFile.readByte(); // Tells if page is interior or leaf
+			tableFile.readByte(); // Unused byte
+			short num_cells = tableFile.readShort(); // The number of cells on the page
+			short cell_offset = tableFile.readShort(); // The location of where the content starts
+			cell_offset = (cell_offset == 0) ? 0x01FF : cell_offset;
+
+			int end_of_array = (num_cells*2)+0x10; // Keeps track of where the end of the 2-byte array is
+
+			/* Cell header and body to be inserted */
+			short payload_size = 0;
+			byte[] record_header = new byte[data_types.size()];
+
+			// Calculates payload_size
+			for(int i = 0; i < data.size(); i++){
+				if(data_types.get(i).toUpperCase().equals("TEXT")){
+					payload_size += data.get(i).getBytes().length;
+				}
+				else{
+					payload_size += 2;
+				}
+
+				byte serial_code = getDataTypeCode(data_types.get(i));
+				serial_code += (serial_code == TEXT) ?  data.get(i).getBytes().length:0; // If it is a text data type then the code is 0x0c + n
+				record_header[i] = serial_code;
+			}
+
+			payload_size += data_types.size(); // Adds the size of the record header (just the number of types in bytes)
+
+			int cell_size = payload_size+2+4; // total size of the cell (payload+size of payload_size + row_id;
+
+
+			/* Checks if there is enough space for the record*/
+			long start_location = (page_location+cell_offset)-cell_size; // The location to start writing the record
+
+			if(start_location < end_of_array+2){
+				out.println("Error : not enough space in the page");
+				return false;
+			}
+
+			/*Write the data to the table*/
+			tableFile.seek(start_location);
+			tableFile.writeShort(payload_size);
+			tableFile.writeInt(row_id);
+
+			increment_row_id(); //updates row_id
+
+			tableFile.write(record_header);
+
+			try{
+				for(int i = 0; i < record_header.length; i++){
+					switch (record_header[i]){
+						case NULL:
+							tableFile.writeByte(0x00);
+							break;
+						case TINYINT:
+							tableFile.writeByte(Byte.parseByte(data.get(i)));
+						case SMALLINT:
+							tableFile.writeShort(Short.parseShort(data.get(i)));
+						case INT:
+							tableFile.writeInt(Integer.parseInt(data.get(i)));
+						case BIGINT_LONG:
+							tableFile.writeLong(Long.parseLong(data.get(i)));
+						case DOUBLE:
+							tableFile.writeDouble(Double.parseDouble(data.get(i)));
+						default:
+							tableFile.write(data.get(i).getBytes());
+					}
+
+				}
+			}catch (Exception e){
+				out.println("Data does not match data types");
+				return false;
+			}
+
+			// Update cell array
+			tableFile.seek((page_location+0x02));
+			tableFile.writeShort((num_cells+1));
+
+			// Update page offset for first cell
+			tableFile.writeShort(cell_offset-cell_size);
+
+			// Update num cells
+			tableFile.seek((page_location+end_of_array));
+			tableFile.writeShort(cell_offset-cell_size);
+
+			tableFile.close();
+		}
+		catch(Exception e){
+			out.println(e);
+		}
+
+
+		return true;
+	}
+
+	/**
+	 * @param type : data type you want the code for
+	 * @return : returns the serial code of the data type
+	 */
+	static byte getDataTypeCode(String type){
+		type = type.toUpperCase();
+		switch (type){
+			case "NULL":
+				return NULL;
+			case "TINTINT":
+				return TINYINT;
+			case "SMALLINT":
+				return SMALLINT;
+			case "INT":
+				return INT;
+			case "BIGINT":
+			case "LONG":
+				return  BIGINT_LONG;
+			case "FLOAT":
+				return FLOAT;
+			case "DOUBLE":
+				return DOUBLE;
+			case "YEAR":
+				return YEAR;
+			case "TIME":
+				return TIME;
+			case "DATETIME":
+				return DATETIME;
+			case "DATE":
+				return DATE;
+			case "TEXT":
+				return TEXT;
+		}
+		return NULL;
+	}
+
+
+	//  Every time a number is used update the saved row_id so it can't be used again
+	public static void increment_row_id(){
+		try {
+			row_id+=1;
+			RandomAccessFile current_row_id = new RandomAccessFile("data/current_row_id.txt", "rw");
+			current_row_id.seek(0);
+			current_row_id.writeUTF(("" + row_id));
+			current_row_id.close();
+		}catch (Exception e){
+			out.println(e);
+		}
 	}
 
 	static void initializeDataStore() {
@@ -364,6 +543,28 @@ public class DavisBasePromptExample {
 		catch (SecurityException se) {
 			out.println("Unable to create data container directory");
 			out.println(se);
+		}
+
+		/** Create txt file to keep track of row_id*/
+		try {
+			File dir = new File("data/current_row_id.txt");
+			if(!dir.exists()){
+				RandomAccessFile current_row_id = new RandomAccessFile("data/current_row_id.txt", "rw");
+				current_row_id.seek(0);
+				current_row_id.writeUTF("1");
+				current_row_id.close();
+				row_id = 1;
+			}else{
+				RandomAccessFile current_row_id = new RandomAccessFile("data/current_row_id.txt", "rw");
+				current_row_id.seek(0);
+				row_id = Integer.parseInt(current_row_id.readUTF());
+				current_row_id.close();
+
+			}
+		}
+		catch (Exception e) {
+			out.println("Unable to create current_row_id.txt");
+			out.println(e);
 		}
 
 		/** Create davisbase_tables system catalog */
