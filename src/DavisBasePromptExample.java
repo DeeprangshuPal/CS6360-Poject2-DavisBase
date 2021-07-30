@@ -279,6 +279,7 @@ public class DavisBasePromptExample {
 		/* YOUR CODE GOES HERE */
 		ArrayList<String> col_types = new ArrayList<>();
 
+		/*
 		try{
 			for(int i = 3; i < createTableTokens.size(); i+=2){
 				col_names.add(createTableTokens.get(i));
@@ -289,6 +290,7 @@ public class DavisBasePromptExample {
 			out.println("Error :  did not define data types for all columns");
 			return;
 		}
+		 */
 
 		/*  Code to create a .tbl file to contain table data */
 		try {
@@ -327,6 +329,10 @@ public class DavisBasePromptExample {
 		 *  for each column in the new table 
 		 *  i.e. database catalog meta-data 
 		 */
+	}
+
+	public static boolean insertIntoPage(int pageNum, String fileName){
+		return false;
 	}
 
 	static void initializeDataStore() {
