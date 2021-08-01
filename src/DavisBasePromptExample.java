@@ -371,6 +371,7 @@ public class DavisBasePromptExample {
 				}
 
 				//Insert columns to davisbase_columns meta data
+				String table_row_id = ""+(row_id-1);
 				try{
 					for(int i = 0; i < col_names.size(); i++){
 						ArrayList<String> temp_data = new ArrayList<>();
@@ -381,8 +382,8 @@ public class DavisBasePromptExample {
 						String is_nullable = col_isnullable.get(i);
 						String col_key = col_keys.get(i);
 
-						temp_data.add(table_name);
-						temp_types.add("TEXT");
+						temp_data.add(table_row_id);
+						temp_types.add("INT");
 
 						temp_data.add(col_name);
 						temp_types.add("TEXT");
@@ -480,11 +481,26 @@ public class DavisBasePromptExample {
 
 			// Calculates payload_size
 			for(int i = 0; i < data.size(); i++){
-				if(data_types.get(i).toUpperCase().equals("TEXT")){
-					payload_size += data.get(i).getBytes().length;
+				if(data_types.get(i).toUpperCase().equals("TINYINT")){
+					payload_size += 1;
+				}
+				else if(data_types.get(i).toUpperCase().equals("SMALLINT")){
+					payload_size += 2;
+				}
+				else if(data_types.get(i).toUpperCase().equals("INT")){
+					payload_size += 4;
+				}
+				else if(data_types.get(i).toUpperCase().equals("BIGINT") || data_types.get(i).toUpperCase().equals("LONG")){
+					payload_size += 8;
+				}
+				else if(data_types.get(i).toUpperCase().equals("FLOAT")){
+					payload_size += 4;
+				}
+				else if(data_types.get(i).toUpperCase().equals("DOUBLE")){
+					payload_size += 8;
 				}
 				else{
-					payload_size += 2;
+					payload_size += data.get(i).getBytes().length;
 				}
 
 				byte serial_code = getDataTypeCode(data_types.get(i));
@@ -522,16 +538,22 @@ public class DavisBasePromptExample {
 							break;
 						case TINYINT:
 							tableFile.writeByte(Byte.parseByte(data.get(i)));
+							break;
 						case SMALLINT:
 							tableFile.writeShort(Short.parseShort(data.get(i)));
+							break;
 						case INT:
 							tableFile.writeInt(Integer.parseInt(data.get(i)));
+							break;
 						case BIGINT_LONG:
 							tableFile.writeLong(Long.parseLong(data.get(i)));
+							break;
 						case DOUBLE:
 							tableFile.writeDouble(Double.parseDouble(data.get(i)));
+							break;
 						default:
 							tableFile.write(data.get(i).getBytes());
+							break;
 					}
 
 				}
@@ -570,7 +592,7 @@ public class DavisBasePromptExample {
 		switch (type){
 			case "NULL":
 				return NULL;
-			case "TINTINT":
+			case "TINYINT":
 				return TINYINT;
 			case "SMALLINT":
 				return SMALLINT;
