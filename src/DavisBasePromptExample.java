@@ -279,22 +279,65 @@ public class DavisBasePromptExample {
 		String s = createTableString;
 		s = s.replace("("," ");
 		s = s.replace(")"," ");
+		s = s.replace(","," ");
+		s = s.replaceAll("\\s+", " ");
 
+		s = s.replaceAll("(?i)\\[NOT NULL\\]", "\\[not_null\\]");
+		s = s.replaceAll("(?i)\\[PRIMARY KEY\\]", "\\[primary_key\\]");
+		s = s.replaceAll("\\]\\[", "] [");
+		s = s.replaceAll("\\[", " [");
+		s = s.replaceAll("\\s+", " ");
 
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
 
 		/* Define table file name */
-		String tableFileName = "data/"+createTableTokens.get(2) + ".tbl";
+		String table_name = createTableTokens.get(2);
+		String tableFileName = "data/"+ table_name + ".tbl";
 
 		/* YOUR CODE GOES HERE */
-/*
-		ArrayList<insert_data> meta_data_to_insert = new ArrayList<insert_data>();
 
+		ArrayList<String> col_names = new ArrayList<>();
+		ArrayList<String> col_types = new ArrayList<>();
+		ArrayList<String> col_keys = new ArrayList<>();
+		ArrayList<String> col_isnullable = new ArrayList<>();
 
 		try{
 			for(int i = 3; i < createTableTokens.size(); i+=2){
-				col_names.add(createTableTokens.get(i));
-				col_types.add(createTableTokens.get(i+1));
+				String col_name = createTableTokens.get(i);
+				String col_type = createTableTokens.get(i+1);
+
+				if(i+2 < createTableTokens.size() && createTableTokens.get(i+2).startsWith("[")){
+					ArrayList<String> temp = new ArrayList<>();
+					for(int j = i+2; j < createTableTokens.size(); j++){
+						if(!createTableTokens.get(j).startsWith("["))
+							break;
+						if(!temp.contains(createTableTokens.get(j))){
+							temp.add(createTableTokens.get(j));
+						}
+						i+=1;
+					}
+
+					if(temp.contains("[primary_key]")){
+						col_keys.add("PRI");
+						col_isnullable.add("NO");
+					}
+					else if(temp.contains("[unique]")){
+						col_keys.add("UNI");
+					}
+					if(temp.contains("[not_null]") && !temp.contains("[primary_key]")){
+						col_isnullable.add("NO");
+					}
+					if(!temp.contains("[not_null]") && !temp.contains("[primary_key]")){
+						col_isnullable.add("YES");
+					}
+				}
+				else{
+					col_isnullable.add("YES");
+					col_keys.add("NULL");
+				}
+
+				col_names.add(col_name);
+ 				col_types.add(col_type);
 			}
 		}
 		catch(Exception e){
@@ -302,7 +345,7 @@ public class DavisBasePromptExample {
 			return;
 		}
 
-*/
+
 		/*  Code to create a .tbl file to contain table data */
 		try {
 			/*  Create RandomAccessFile tableFile in read-write mode.
@@ -314,12 +357,55 @@ public class DavisBasePromptExample {
 				/*
 				* add to meta data first, if it fails don't create the table
 				*/
-				// NOTE : THIS IS A PLACE HOLDER, RIGHT NOW THERE IS NO B+ TREE SO IT JUST ADDS TO THE FIRST PAGE
+
+				// Insert table to meta data
 				ArrayList<String> data = new ArrayList<String>();
-				data.add(createTableTokens.get(2));
+				data.add(table_name);
 				ArrayList<String> data_type = new ArrayList<String>();
 				data_type.add("TEXT");
-				insertIntoPage(0,davisbase_tables,data_type,data);
+				boolean meta_table = insertIntoPage(0,davisbase_tables,data_type,data);
+
+				if(meta_table == false){
+					out.println("Error adding table information to table meta data");
+					return;
+				}
+
+				//Insert columns to davisbase_columns meta data
+				try{
+					for(int i = 0; i < col_names.size(); i++){
+						ArrayList<String> temp_data = new ArrayList<>();
+						ArrayList<String> temp_types = new ArrayList<>();
+						String col_name = col_names.get(i);
+						String type = col_types.get(i);
+						String ordinal_position = "" + i;
+						String is_nullable = col_isnullable.get(i);
+						String col_key = col_keys.get(i);
+
+						temp_data.add(table_name);
+						temp_types.add("TEXT");
+
+						temp_data.add(col_name);
+						temp_types.add("TEXT");
+
+						temp_data.add(type);
+						temp_types.add("TEXT");
+
+						temp_data.add(ordinal_position);
+						temp_types.add("TINYINT");
+
+						temp_data.add(is_nullable);
+						temp_types.add("TEXT");
+
+						temp_data.add(col_key);
+						temp_types.add("TEXT");
+
+						insertIntoPage(0,davisbase_columns,temp_types,temp_data);
+					}
+				}catch (Exception e){
+					out.println("Error in method parseCreateTable(), constraints not defined for all columns");
+					return;
+				}
+
 
 				RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
 				tableFile.setLength(pageSize);
