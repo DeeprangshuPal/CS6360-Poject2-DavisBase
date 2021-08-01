@@ -512,6 +512,7 @@ public class DavisBasePromptExample {
 			}
 
 			payload_size += data_types.size(); // Adds the size of the record header (just the number of types in bytes)
+			payload_size += 1; // An extra byte to account for column number
 
 			int cell_size = payload_size+2+4; // total size of the cell (payload+size of payload_size + row_id;
 
@@ -538,6 +539,7 @@ public class DavisBasePromptExample {
 
 			increment_row_id(); //updates row_id
 
+			tableFile.writeByte(data.size());
 			tableFile.write(record_header);
 
 			try{
