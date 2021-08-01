@@ -75,26 +75,26 @@ public class DavisBasePromptExample {
 	 * **********************************************************************
 	 * Main method
 	 */
-//	public static void main(String[] args) {
-//
-//		/* Display the welcome screen */
-//		splashScreen();
-//
-//		/* This method will initialize the database storage if it doesn't exit */
-//		initializeDataStore();
-//
-//		/* Variable to collect user input from the prompt */
-//		String userCommand = "";
-//
-//		while (!isExit) {
-//			System.out.print(prompt);
-//			/* toLowerCase() renders command case insensitive */
-//			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
-//			// userCommand = userCommand.replace("\n", "").replace("\r", "");
-//			parseUserCommand(userCommand);
-//		}
-//		System.out.println("Exiting...");
-//	}
+	public static void main(String[] args) {
+
+		/* Display the welcome screen */
+		splashScreen();
+
+		/* This method will initialize the database storage if it doesn't exit */
+		initializeDataStore();
+
+		/* Variable to collect user input from the prompt */
+		String userCommand = "";
+
+		while (!isExit) {
+			System.out.print(prompt);
+			/* toLowerCase() renders command case insensitive */
+			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+			// userCommand = userCommand.replace("\n", "").replace("\r", "");
+			parseUserCommand(userCommand);
+		}
+		System.out.println("Exiting...");
+	}
 
 	/** ***********************************************************************
 	 *  Static method definitions
@@ -646,9 +646,9 @@ public class DavisBasePromptExample {
 		}
 	}
 
-	public static void main(String[] args) {
-		String query = "select * from davisbase_columns where rowid=2";
-		parseQuery(query);
-	}
+//	public static void main(String[] args) {
+//		String query = "select * from davisbase_columns where rowid=2";
+//		parseQuery(query);
+//	}
 
 }
