@@ -75,26 +75,26 @@ public class DavisBasePromptExample {
 	 * **********************************************************************
 	 * Main method
 	 */
-	public static void main(String[] args) {
-
-		/* Display the welcome screen */
-		splashScreen();
-
-		/* This method will initialize the database storage if it doesn't exit */
-		initializeDataStore();
-
-		/* Variable to collect user input from the prompt */
-		String userCommand = "";
-
-		while (!isExit) {
-			System.out.print(prompt);
-			/* toLowerCase() renders command case insensitive */
-			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
-			// userCommand = userCommand.replace("\n", "").replace("\r", "");
-			parseUserCommand(userCommand);
-		}
-		System.out.println("Exiting...");
-	}
+//	public static void main(String[] args) {
+//
+//		/* Display the welcome screen */
+//		splashScreen();
+//
+//		/* This method will initialize the database storage if it doesn't exit */
+//		initializeDataStore();
+//
+//		/* Variable to collect user input from the prompt */
+//		String userCommand = "";
+//
+//		while (!isExit) {
+//			System.out.print(prompt);
+//			/* toLowerCase() renders command case insensitive */
+//			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+//			// userCommand = userCommand.replace("\n", "").replace("\r", "");
+//			parseUserCommand(userCommand);
+//		}
+//		System.out.println("Exiting...");
+//	}
 
 	/** ***********************************************************************
 	 *  Static method definitions
@@ -271,7 +271,11 @@ public class DavisBasePromptExample {
 				String column = map.get("column");
 				String operator = map.get("operator");
 				String value = map.get("value");
-				Helperclass.selectTable(file_name, Integer.parseInt(value), operator, columns);
+				System.out.println(operator);
+				System.out.println(value);
+				System.out.println(table_name);
+
+				Filter.selectTable(file_name, Integer.parseInt(value), operator, columns);
 			}else {
 				out.println("Invalid Select Command!!");
 			}
@@ -640,6 +644,11 @@ public class DavisBasePromptExample {
 			out.println("Unable to create the database_columns file");
 			out.println(e);
 		}
+	}
+
+	public static void main(String[] args) {
+		String query = "select * from davisbase_columns where rowid=2";
+		parseQuery(query);
 	}
 
 }

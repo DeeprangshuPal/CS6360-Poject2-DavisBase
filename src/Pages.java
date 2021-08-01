@@ -6,7 +6,7 @@ public class Pages {
 
 	public static short getCellCount(RandomAccessFile table, int pageNum) {
 		try {
-			table.seek(pageNum * pageSize + 1);
+			table.seek(pageNum * pageSize + 2);
 			return table.readShort();
 		} catch (Exception e) {
 			System.out.println(e);
