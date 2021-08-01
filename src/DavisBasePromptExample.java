@@ -1,4 +1,3 @@
-import javafx.util.Pair;
 
 import java.io.RandomAccessFile;
 import java.io.File;
@@ -7,23 +6,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLOutput;
-import java.util.Scanner;
-import java.util.SortedMap;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static java.lang.System.out;
 
 /**
- *  @author Chris Irwin Davis
- *  @version 1.0
- *  <b>
- *  <p>This is an example of how to create an interactive prompt</p>
- *  <p>There is also some guidance to get started wiht read/write of
- *     binary data files using RandomAccessFile class</p>
- *  </b>
- *
+ * @author Chris Irwin Davis
+ * @version 1.0
+ * <b>
+ * <p>This is an example of how to create an interactive prompt</p>
+ * <p>There is also some guidance to get started wiht read/write of
+ * binary data files using RandomAccessFile class</p>
+ * </b>
  */
 public class DavisBasePromptExample {
 
@@ -65,21 +60,22 @@ public class DavisBasePromptExample {
 	 * Page size for alll files is 512 bytes by default.
 	 * You may choose to make it user modifiable
 	 */
-	static long pageSize = 512; 
+	static long pageSize = 512;
 
-	/* 
+	/*
 	 *  The Scanner class is used to collect user commands from the prompt
 	 *  There are many ways to do this. This is just one.
 	 *
-	 *  Each time the semicolon (;) delimiter is entered, the userCommand 
+	 *  Each time the semicolon (;) delimiter is entered, the userCommand
 	 *  String is re-populated.
 	 */
 	static Scanner scanner = new Scanner(System.in).useDelimiter(";");
-	
-	/** ***********************************************************************
-	 *  Main method
+
+	/**
+	 * **********************************************************************
+	 * Main method
 	 */
-    public static void main(String[] args) {
+	public static void main(String[] args) {
 
 		/* Display the welcome screen */
 		splashScreen();
@@ -88,9 +84,9 @@ public class DavisBasePromptExample {
 		initializeDataStore();
 
 		/* Variable to collect user input from the prompt */
-		String userCommand = ""; 
+		String userCommand = "";
 
-		while(!isExit) {
+		while (!isExit) {
 			System.out.print(prompt);
 			/* toLowerCase() renders command case insensitive */
 			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
@@ -98,8 +94,6 @@ public class DavisBasePromptExample {
 			parseUserCommand(userCommand);
 		}
 		System.out.println("Exiting...");
-
-
 	}
 
 	/** ***********************************************************************
@@ -107,92 +101,95 @@ public class DavisBasePromptExample {
 	 */
 
 	/**
-	 *  Display the splash screen
+	 * Display the splash screen
 	 */
 	public static void splashScreen() {
-		System.out.println(line("-",80));
-        System.out.println("Welcome to DavisBaseLite"); // Display the string.
+		System.out.println(line("-", 80));
+		System.out.println("Welcome to DavisBaseLite"); // Display the string.
 		System.out.println("DavisBaseLite Version " + getVersion());
 		System.out.println(getCopyright());
 		System.out.println("\nType \"help;\" to display supported commands.");
-		System.out.println(line("-",80));
+		System.out.println(line("-", 80));
 	}
-	
+
 	/**
-	 * @param s The String to be repeated
+	 * @param s   The String to be repeated
 	 * @param num The number of time to repeat String s.
 	 * @return String A String object, which is the String s appended to itself num times.
 	 */
-	public static String line(String s,int num) {
+	public static String line(String s, int num) {
 		String a = "";
-		for(int i=0;i<num;i++) {
+		for (int i = 0; i < num; i++) {
 			a += s;
 		}
 		return a;
 	}
-	
+
 	public static void printCmd(String s) {
 		System.out.println("\n\t" + s + "\n");
 	}
+
 	public static void printDef(String s) {
 		System.out.println("\t\t" + s);
 	}
-	
-		/**
-		 *  Help: Display supported commands
-		 */
-		public static void help() {
-			out.println(line("*",80));
-			out.println("SUPPORTED COMMANDS\n");
-			out.println("All commands below are case insensitive\n");
-			out.println("SHOW TABLES;");
-			out.println("\tDisplay the names of all tables.\n");
-			//printCmd("SELECT * FROM <table_name>;");
-			//printDef("Display all records in the table <table_name>.");
-			out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
-			out.println("\tDisplay table records whose optional <condition>");
-			out.println("\tis <column_name> = <value>.\n");
-			out.println("DROP TABLE <table_name>;");
-			out.println("\tRemove table data (i.e. all records) and its schema.\n");
-			out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
-			out.println("\tModify records data whose optional <condition> is\n");
-			out.println("VERSION;");
-			out.println("\tDisplay the program version.\n");
-			out.println("HELP;");
-			out.println("\tDisplay this help information.\n");
-			out.println("EXIT;");
-			out.println("\tExit the program.\n");
-			out.println(line("*",80));
-		}
 
-	/** return the DavisBase version */
+	/**
+	 * Help: Display supported commands
+	 */
+	public static void help() {
+		out.println(line("*", 80));
+		out.println("SUPPORTED COMMANDS\n");
+		out.println("All commands below are case insensitive\n");
+		out.println("SHOW TABLES;");
+		out.println("\tDisplay the names of all tables.\n");
+		//printCmd("SELECT * FROM <table_name>;");
+		//printDef("Display all records in the table <table_name>.");
+		out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
+		out.println("\tDisplay table records whose optional <condition>");
+		out.println("\tis <column_name> = <value>.\n");
+		out.println("DROP TABLE <table_name>;");
+		out.println("\tRemove table data (i.e. all records) and its schema.\n");
+		out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
+		out.println("\tModify records data whose optional <condition> is\n");
+		out.println("VERSION;");
+		out.println("\tDisplay the program version.\n");
+		out.println("HELP;");
+		out.println("\tDisplay this help information.\n");
+		out.println("EXIT;");
+		out.println("\tExit the program.\n");
+		out.println(line("*", 80));
+	}
+
+	/**
+	 * return the DavisBase version
+	 */
 	public static String getVersion() {
 		return version;
 	}
-	
+
 	public static String getCopyright() {
 		return copyright;
 	}
-	
+
 	public static void displayVersion() {
 		System.out.println("DavisBaseLite Version " + getVersion());
 		System.out.println(getCopyright());
 	}
-		
-	public static void parseUserCommand (String userCommand) {
-		
-		/* commandTokens is an array of Strings that contains one token per array element 
-		 * The first token can be used to determine the type of command 
+
+	public static void parseUserCommand(String userCommand) {
+
+		/* commandTokens is an array of Strings that contains one token per array element
+		 * The first token can be used to determine the type of command
 		 * The other tokens can be used to pass relevant parameters to each command-specific
 		 * method inside each case statement */
 		// String[] commandTokens = userCommand.split(" ");
 		ArrayList<String> commandTokens = new ArrayList<String>(Arrays.asList(userCommand.split(" ")));
-		
+
 
 		/*
-		*  This switch handles a very small list of hardcoded commands of known syntax.
-		*  You will want to rewrite this method to interpret more complex commands. 
-		*/
+		 *  This switch handles a very small list of hardcoded commands of known syntax.
+		 *  You will want to rewrite this method to interpret more complex commands.
+		 */
 		switch (commandTokens.get(0)) {
 			case "select":
 				System.out.println("CASE: SELECT");
@@ -226,65 +223,96 @@ public class DavisBasePromptExample {
 				break;
 		}
 	}
-	
+
 
 	/**
-	 *  Stub method for dropping tables
-	 *  @param dropTableString is a String of the user input
+	 * Stub method for dropping tables
+	 *
+	 * @param dropTableString is a String of the user input
 	 */
 	public static void dropTable(String dropTableString) {
 		String s = dropTableString;
-		s = s.replace("("," ");
-		s = s.replace(")"," ");
+		s = s.replace("(", " ");
+		s = s.replace(")", " ");
 
 		ArrayList<String> dropTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
 
 		/* Define table file name */
-		String tableFileName = "data/"+dropTableTokens.get(2) + ".tbl";
+		String tableFileName = "data/" + dropTableTokens.get(2) + ".tbl";
 
 		/*  Code to create a .tbl file to contain table data */
 		try {
 			File del = new File(tableFileName);
 			del.delete();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			System.out.println(e);
 		}
 	}
-	
+
 	/**
-	 *  Stub method for executing queries
-	 *  @param queryString is a String of the user input
+	 * Stub method for executing queries
+	 *
+	 * @param queryString is a String of the user input
 	 */
 	public static void parseQuery(String queryString) {
-		System.out.println("STUB: This is the parseQuery method");
-		System.out.println("\tParsing the string:\"" + queryString + "\"");
+		out.println("STUB: This is the parseQuery method");
+		out.println("\tParsing the string:\"" + queryString + "\"");
+		try {
+			Map<String,String> map = Helperclass.getCondition(queryString);
+			if (map.get("match") == "yes"){
+				String table_name = map.get("table_name");
+
+				String[] columns = SchemaHelper.getColumns(table_name);
+
+
+				String file_name = "data/" + table_name + ".tbl";
+				RandomAccessFile table_file = new RandomAccessFile(file_name, "rw");
+
+				String column = map.get("column");
+				String operator = map.get("operator");
+				String value = map.get("value");
+				Helperclass.selectTable(file_name, Integer.parseInt(value), operator);
+			}else {
+				out.println("Invalid Select Command!!");
+			}
+		} catch (Exception e) {
+			out.println("Error Parsing Select command!!");
+			out.println(e);
+		}
+
+
+		// first match pattern
+		// extract table name, condition(negation, which column, operator, value)
+		// load table file
+		// do i have a mapping of order or columns? yes --> ordinal_position from davisbase_columns
+		// once we know the column number(i.e. 2nd column) and value, we go to each page and search each record for the column value
+		// and if a match is found then just display
 	}
 
 	/**
-	 *  Stub method for updating records
-	 *  @param updateString is a String of the user input
+	 * Stub method for updating records
+	 *
+	 * @param updateString is a String of the user input
 	 */
 	public static void parseUpdate(String updateString) {
 		System.out.println("STUB: This is the dropTable method");
 		System.out.println("Parsing the string:\"" + updateString + "\"");
 	}
 
-	
+
 	/**
-	 *  Stub method for creating new tables
-	 *  @param queryString is a String of the user input
+	 * Stub method for creating new tables
 	 */
 	public static void parseCreateTable(String createTableString) {
 		String s = createTableString;
-		s = s.replace("("," ");
-		s = s.replace(")"," ");
+		s = s.replace("(", " ");
+		s = s.replace(")", " ");
 
 
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
 
 		/* Define table file name */
-		String tableFileName = "data/"+createTableTokens.get(2) + ".tbl";
+		String tableFileName = "data/" + createTableTokens.get(2) + ".tbl";
 
 		/* YOUR CODE GOES HERE */
 /*
@@ -309,17 +337,17 @@ public class DavisBasePromptExample {
 			 *  Note that this doesn't create the table file in the correct directory structure
 			 */
 			File f = new File(tableFileName);
-			if(!f.exists()){
+			if (!f.exists()) {
 
 				/*
-				* add to meta data first, if it fails don't create the table
-				*/
+				 * add to meta data first, if it fails don't create the table
+				 */
 				// NOTE : THIS IS A PLACE HOLDER, RIGHT NOW THERE IS NO B+ TREE SO IT JUST ADDS TO THE FIRST PAGE
 				ArrayList<String> data = new ArrayList<String>();
 				data.add(createTableTokens.get(2));
 				ArrayList<String> data_type = new ArrayList<String>();
 				data_type.add("TEXT");
-				insertIntoPage(0,davisbase_tables,data_type,data);
+				insertIntoPage(0, davisbase_tables, data_type, data);
 
 				RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
 				tableFile.setLength(pageSize);
@@ -334,48 +362,47 @@ public class DavisBasePromptExample {
 				tableFile.writeByte(0x00); // Unused byte
 
 				tableFile.close();
-			}
-			else{
+			} else {
 				out.println("Table name is taken");
 			}
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			System.out.println(e);
 		}
-		
-		/*  Code to insert a row in the davisbase_tables table 
-		 *  i.e. database catalog meta-data 
+
+		/*  Code to insert a row in the davisbase_tables table
+		 *  i.e. database catalog meta-data
 		 */
-		
-		/*  Code to insert rows in the davisbase_columns table  
-		 *  for each column in the new table 
-		 *  i.e. database catalog meta-data 
+
+		/*  Code to insert rows in the davisbase_columns table
+		 *  for each column in the new table
+		 *  i.e. database catalog meta-data
 		 */
 	}
 
 	/**
-	 *  Method for inserting data into a table page
-	 *  @param pageNum is the number of the page to insert to
-	 *  @param fileLocation is the tbl file to insert to
-	 *  @param data_types : Type of data to be inserted
-	 *  @param data : The data to be inserted
+	 * Method for inserting data into a table page
+	 *
+	 * @param pageNum      is the number of the page to insert to
+	 * @param fileLocation is the tbl file to insert to
+	 * @param data_types   : Type of data to be inserted
+	 * @param data         : The data to be inserted
 	 */
-	public static boolean insertIntoPage(int pageNum, String fileLocation, ArrayList<String> data_types, ArrayList<String> data){
+	public static boolean insertIntoPage(int pageNum, String fileLocation, ArrayList<String> data_types, ArrayList<String> data) {
 		File f = new File(fileLocation);
 
-		if(!f.exists()){
+		if (!f.exists()) {
 			out.println("Table does not exist");
 			return false;
 		}
 
-		if(data_types.size() != data.size()){
+		if (data_types.size() != data.size()) {
 			out.println("Not enough data types for all data");
 			return false;
 		}
 
-		long page_location = pageSize*pageNum;
+		long page_location = pageSize * pageNum;
 
-		try{
+		try {
 			RandomAccessFile tableFile = new RandomAccessFile(fileLocation, "rw");
 
 			/* Load headers of the page*/
@@ -386,35 +413,34 @@ public class DavisBasePromptExample {
 			short cell_offset = tableFile.readShort(); // The location of where the content starts
 			cell_offset = (cell_offset == 0) ? 0x01FF : cell_offset;
 
-			int end_of_array = (num_cells*2)+0x10; // Keeps track of where the end of the 2-byte array is
+			int end_of_array = (num_cells * 2) + 0x10; // Keeps track of where the end of the 2-byte array is
 
 			/* Cell header and body to be inserted */
 			short payload_size = 0;
 			byte[] record_header = new byte[data_types.size()];
 
 			// Calculates payload_size
-			for(int i = 0; i < data.size(); i++){
-				if(data_types.get(i).toUpperCase().equals("TEXT")){
+			for (int i = 0; i < data.size(); i++) {
+				if (data_types.get(i).toUpperCase().equals("TEXT")) {
 					payload_size += data.get(i).getBytes().length;
-				}
-				else{
+				} else {
 					payload_size += 2;
 				}
 
 				byte serial_code = getDataTypeCode(data_types.get(i));
-				serial_code += (serial_code == TEXT) ?  data.get(i).getBytes().length:0; // If it is a text data type then the code is 0x0c + n
+				serial_code += (serial_code == TEXT) ? data.get(i).getBytes().length : 0; // If it is a text data type then the code is 0x0c + n
 				record_header[i] = serial_code;
 			}
 
 			payload_size += data_types.size(); // Adds the size of the record header (just the number of types in bytes)
 
-			int cell_size = payload_size+2+4; // total size of the cell (payload+size of payload_size + row_id;
+			int cell_size = payload_size + 2 + 4; // total size of the cell (payload+size of payload_size + row_id;
 
 
 			/* Checks if there is enough space for the record*/
-			long start_location = (page_location+cell_offset)-cell_size; // The location to start writing the record
+			long start_location = (page_location + cell_offset) - cell_size; // The location to start writing the record
 
-			if(start_location < end_of_array+2){
+			if (start_location < end_of_array + 2) {
 				out.println("Error : not enough space in the page");
 				return false;
 			}
@@ -428,9 +454,9 @@ public class DavisBasePromptExample {
 
 			tableFile.write(record_header);
 
-			try{
-				for(int i = 0; i < record_header.length; i++){
-					switch (record_header[i]){
+			try {
+				for (int i = 0; i < record_header.length; i++) {
+					switch (record_header[i]) {
 						case NULL:
 							tableFile.writeByte(0x00);
 							break;
@@ -449,25 +475,24 @@ public class DavisBasePromptExample {
 					}
 
 				}
-			}catch (Exception e){
+			} catch (Exception e) {
 				out.println("Data does not match data types");
 				return false;
 			}
 
 			// Update cell array
-			tableFile.seek((page_location+0x02));
-			tableFile.writeShort((num_cells+1));
+			tableFile.seek((page_location + 0x02));
+			tableFile.writeShort((num_cells + 1));
 
 			// Update page offset for first cell
-			tableFile.writeShort(cell_offset-cell_size);
+			tableFile.writeShort(cell_offset - cell_size);
 
 			// Update num cells
-			tableFile.seek((page_location+end_of_array));
-			tableFile.writeShort(cell_offset-cell_size);
+			tableFile.seek((page_location + end_of_array));
+			tableFile.writeShort(cell_offset - cell_size);
 
 			tableFile.close();
-		}
-		catch(Exception e){
+		} catch (Exception e) {
 			out.println(e);
 		}
 
@@ -479,9 +504,9 @@ public class DavisBasePromptExample {
 	 * @param type : data type you want the code for
 	 * @return : returns the serial code of the data type
 	 */
-	static byte getDataTypeCode(String type){
+	static byte getDataTypeCode(String type) {
 		type = type.toUpperCase();
-		switch (type){
+		switch (type) {
 			case "NULL":
 				return NULL;
 			case "TINTINT":
@@ -492,7 +517,7 @@ public class DavisBasePromptExample {
 				return INT;
 			case "BIGINT":
 			case "LONG":
-				return  BIGINT_LONG;
+				return BIGINT_LONG;
 			case "FLOAT":
 				return FLOAT;
 			case "DOUBLE":
@@ -513,14 +538,14 @@ public class DavisBasePromptExample {
 
 
 	//  Every time a number is used update the saved row_id so it can't be used again
-	public static void increment_row_id(){
+	public static void increment_row_id() {
 		try {
-			row_id+=1;
+			row_id += 1;
 			RandomAccessFile current_row_id = new RandomAccessFile("data/current_row_id.txt", "rw");
 			current_row_id.seek(0);
 			current_row_id.writeUTF(("" + row_id));
 			current_row_id.close();
-		}catch (Exception e){
+		} catch (Exception e) {
 			out.println(e);
 		}
 	}
@@ -530,17 +555,16 @@ public class DavisBasePromptExample {
 		/** Create data directory at the current OS location to hold */
 		try {
 			File dataDir = new File("data");
-			if(!dataDir.exists()){
+			if (!dataDir.exists()) {
 				dataDir.mkdir();
 				String[] oldTableFiles;
 				oldTableFiles = dataDir.list();
-				for (int i=0; i<oldTableFiles.length; i++) {
+				for (int i = 0; i < oldTableFiles.length; i++) {
 					File anOldFile = new File(dataDir, oldTableFiles[i]);
 					anOldFile.delete();
 				}
 			}
-		}
-		catch (SecurityException se) {
+		} catch (SecurityException se) {
 			out.println("Unable to create data container directory");
 			out.println(se);
 		}
@@ -548,21 +572,20 @@ public class DavisBasePromptExample {
 		/** Create txt file to keep track of row_id*/
 		try {
 			File dir = new File("data/current_row_id.txt");
-			if(!dir.exists()){
+			if (!dir.exists()) {
 				RandomAccessFile current_row_id = new RandomAccessFile("data/current_row_id.txt", "rw");
 				current_row_id.seek(0);
 				current_row_id.writeUTF("1");
 				current_row_id.close();
 				row_id = 1;
-			}else{
+			} else {
 				RandomAccessFile current_row_id = new RandomAccessFile("data/current_row_id.txt", "rw");
 				current_row_id.seek(0);
 				row_id = Integer.parseInt(current_row_id.readUTF());
 				current_row_id.close();
 
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			out.println("Unable to create current_row_id.txt");
 			out.println(e);
 		}
@@ -570,7 +593,7 @@ public class DavisBasePromptExample {
 		/** Create davisbase_tables system catalog */
 		try {
 			File tablesCatalog = new File("data/davisbase_tables.tbl");
-			if(!tablesCatalog.exists()){
+			if (!tablesCatalog.exists()) {
 				RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/davisbase_tables.tbl", "rw");
 				/* Initially, the file is one page in length */
 				davisbaseTablesCatalog.setLength(pageSize);
@@ -587,8 +610,7 @@ public class DavisBasePromptExample {
 
 				davisbaseTablesCatalog.close();
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			out.println("Unable to create the database_tables file");
 			out.println(e);
 		}
@@ -597,7 +619,7 @@ public class DavisBasePromptExample {
 		try {
 			File columnsCatalog = new File("data/davisbase_columns.tbl");
 
-			if(!columnsCatalog.exists()){
+			if (!columnsCatalog.exists()) {
 				RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
 				/** Initially the file is one page in length */
 				davisbaseColumnsCatalog.setLength(pageSize);
@@ -614,8 +636,7 @@ public class DavisBasePromptExample {
 
 				davisbaseColumnsCatalog.close();
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			out.println("Unable to create the database_columns file");
 			out.println(e);
 		}
