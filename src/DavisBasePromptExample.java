@@ -520,8 +520,15 @@ public class DavisBasePromptExample {
 			long start_location = (page_location+cell_offset)-cell_size; // The location to start writing the record
 
 			if(start_location < end_of_array+2){
-				out.println("Error : not enough space in the page");
-				return false;
+				if((pageNum+1)*pageSize == tableFile.length()){
+					createNewPage(fileLocation);
+					long num_pages = tableFile.length() / pageSize;
+					long last_page = num_pages-1;
+					return insertIntoPage((int)last_page,fileLocation,data_types,data);
+				}
+				else{
+					return insertIntoPage(pageNum+1,fileLocation,data_types,data);
+				}
 			}
 
 			/*Write the data to the table*/
@@ -584,6 +591,34 @@ public class DavisBasePromptExample {
 
 
 		return true;
+	}
+
+	/**
+	 * Creates a new page in the specified file with appropriate headers
+	 * @param file : data type you want the code for
+	 */
+	static void createNewPage(String fileLocation){
+		try{
+			RandomAccessFile file = new RandomAccessFile(fileLocation, "rw");
+			file.setLength(file.length() + pageSize);
+			long num_pages = file.length() / pageSize;
+			long last_page = num_pages-1;
+
+			/* Set file pointer to the beginnning of the file */
+			file.seek(pageSize*last_page);
+
+			file.writeByte(b_tree_table_leaf_page); // First byte of header, states this is a leaf node page
+			file.writeByte(0x00); // Unused byte
+			file.writeShort(0x0000); // Number of cells on the page, 2 byte int (short)
+			file.writeShort(0x0000); // Start of the cell content area (by default 0x00 = 65536)
+			file.writeInt(0x00000000); // Page number of sibling to the right (in creation there is no sibling)
+			file.writeInt(0xFFFFFFFF); // Page number of parent (This is the root page so no parent [-1])
+			file.writeByte(0x00); // Unused byte
+
+			file.close();
+		}catch (Exception e){
+			out.println(e.getMessage());
+		}
 	}
 
 	/**
