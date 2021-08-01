@@ -324,6 +324,9 @@ public class DavisBasePromptExample {
 					else if(temp.contains("[unique]")){
 						col_keys.add("UNI");
 					}
+					else{
+						col_keys.add("NULL");
+					}
 					if(temp.contains("[not_null]") && !temp.contains("[primary_key]")){
 						col_isnullable.add("NO");
 					}
