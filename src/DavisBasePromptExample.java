@@ -271,7 +271,7 @@ public class DavisBasePromptExample {
 				String column = map.get("column");
 				String operator = map.get("operator");
 				String value = map.get("value");
-				Helperclass.selectTable(file_name, Integer.parseInt(value), operator);
+				Helperclass.selectTable(file_name, Integer.parseInt(value), operator, columns);
 			}else {
 				out.println("Invalid Select Command!!");
 			}
