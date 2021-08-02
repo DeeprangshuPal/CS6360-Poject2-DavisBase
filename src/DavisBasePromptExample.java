@@ -248,11 +248,12 @@ public class DavisBasePromptExample {
 		String col_names;
 		String values_string;
 
-		try {
-			table_name = insertTableTokens.get(3);
-			col_names = insertTableTokens.get(2);
-			values_string = insertTableTokens.get(5);
-		} catch (Exception e) {
+		try{
+			table_name = insertTableTokens.get(4);
+			col_names = insertTableTokens.get(3);
+			values_string = insertTableTokens.get(6);
+		}catch(Exception e){
+
 			out.println("\nError in insertion : did not follow the correct syntax");
 			out.println("Syntax : INSERT INTO TABLE (column_list) table_name VALUES (value1,value2,value3, ...);\n");
 			return;
