@@ -3,10 +3,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Helperclass {
+public class Helperclass{
 	static long pageSize = 512;
 	final static String selectRegex = "(?i)SELECT\\s+.+\\s+FROM\\s+([\\w]+)\\s+WHERE(\\s+NOT)?(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+))";
 	public static final String datePattern = "yyyy-MM-dd_HH:mm:ss";
+	public static String showRegex = "(?i)SHOW\\s+TABLES";
+	public static Pattern selectPattern = Pattern.compile(selectRegex, Pattern.MULTILINE);
+	public static Pattern showPattern = Pattern.compile(showRegex, Pattern.MULTILINE);
 
 	/**
 	 * Get select query parameters by matching to a regex
@@ -18,15 +21,14 @@ public class Helperclass {
 
 		string = string.strip();
 		Map<String, String> map = new HashMap<>();
-		Pattern pattern = Pattern.compile(selectRegex, Pattern.MULTILINE);
-		Matcher matcher = pattern.matcher(string);
+		Matcher matcher = selectPattern.matcher(string);
 		boolean match = matcher.matches();
 		if (match) {
 			map.put("match", "yes");
 		} else {
 			map.put("match", "no");
 		}
-		matcher = pattern.matcher(string);
+		matcher = selectPattern.matcher(string);
 		String table_name = string.split(" ")[2];
 		map.put("table_name", table_name.strip());
 		while (matcher.find()) {
@@ -50,6 +52,11 @@ public class Helperclass {
 		return map;
 	}
 
+	public static boolean validateShowCommand(String string){
+		Matcher matcher = showPattern.matcher(string);
+		return matcher.matches();
+	}
+
 
 	public static void main(String[] args) {
 		String a = "select * from table where not rowid <= 5";
@@ -58,6 +65,4 @@ public class Helperclass {
 		for (String name : map.keySet())
 			System.out.println(name + ": " + map.get(name));
 	}
-
-
 }

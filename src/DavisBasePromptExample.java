@@ -195,6 +195,15 @@ public class DavisBasePromptExample {
 				System.out.println("CASE: SELECT");
 				parseQuery(userCommand);
 				break;
+			case "show":
+				if(Helperclass.validateShowCommand(userCommand)) {
+					userCommand = "select * from davisbase_tables where rowid>0";
+					System.out.println("CASE: SHOW");
+					parseQuery(userCommand);
+				}else{
+					System.out.println("Invalid show command!!");
+				}
+				break;
 			case "drop":
 				System.out.println("CASE: DROP");
 				dropTable(userCommand);
