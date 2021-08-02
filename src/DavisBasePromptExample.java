@@ -3,14 +3,12 @@ import javafx.util.Pair;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLOutput;
-import java.util.Scanner;
-import java.util.SortedMap;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static java.lang.System.out;
@@ -210,6 +208,10 @@ public class DavisBasePromptExample {
 				System.out.println("CASE: UPDATE");
 				parseUpdate(userCommand);
 				break;
+			case "insert":
+				System.out.println("CASE: INSERT");
+				parseInsert(userCommand);
+				break;
 			case "help":
 				help();
 				break;
@@ -226,7 +228,259 @@ public class DavisBasePromptExample {
 				break;
 		}
 	}
-	
+
+	/**
+	 *  Stub method for executing queries
+	 *  @param insertString is a String of the user input
+	 */
+	public static void parseInsert(String insertString) {
+		String s = insertString;
+		s = s.replaceAll("\\s+", " ");
+		s = s.replaceAll("\\(\\s+", "(");
+		s = s.replaceAll(",\\s+", ",");
+		ArrayList<String> insertTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
+
+		String table_name;
+		String col_names;
+		String values_string;
+
+		try{
+			table_name = insertTableTokens.get(3);
+			col_names = insertTableTokens.get(2);
+			values_string = insertTableTokens.get(5);
+		}catch(Exception e){
+			out.println("\nError in insertion : did not follow the correct syntax");
+			out.println("Syntax : INSERT INTO TABLE (column_list) table_name VALUES (value1,value2,value3, ...);\n");
+			return;
+		}
+		values_string = values_string.replace("(","");
+		values_string = values_string.replace(")","");
+		values_string = values_string.replace("\"","");
+		ArrayList<String> values_to_insert= new ArrayList<String>(Arrays.asList(values_string.split(",")));
+
+
+		String tableFileName = "data/"+ table_name + ".tbl";
+
+		try{
+			File f = new File(tableFileName);
+			if(!f.exists()){
+				out.println("\nTable does not exist\n");
+				return;
+			}
+
+			int table_row_id = find_table_row_id(table_name);
+
+			if(table_row_id == -1){
+				out.println("\nCould not find table in meta data\n");
+				return;
+			}
+
+			ArrayList<column_info> columns = get_columns(table_row_id);
+			columns.sort(Comparator.comparing(column_info::getOrdinal_position));
+
+			ArrayList<String> data = new ArrayList<String>();
+			ArrayList<String> data_types = new ArrayList<String>();
+
+			for(int i = 0; i <columns.size();i++){
+				if(i < values_to_insert.size()){
+					data_types.add(columns.get(i).getData_type());
+					data.add(values_to_insert.get(i));
+				}
+				else{
+					data.add("NULL");
+					data_types.add("NULL");
+					boolean isPk = columns.get(i).getColumn_key().equals("PRI");
+					boolean isNullable = columns.get(i).getIsnullable().equals("YES");
+					if(isPk){
+						out.println("\nColumn "+columns.get(i).getColumn_name()+" is a primary key and cannot be null\n");
+						return;
+					}
+					if(!isNullable){
+						out.println("\nColumn "+columns.get(i).getColumn_name()+" cannot be null\n");
+						return;
+					}
+				}
+			}
+
+			try{
+				for(int i = 0; i < data_types.size(); i++){
+					switch (data_types.get(i)){
+						case "TINYINT":
+							Byte.parseByte(data.get(i));
+							break;
+						case "SMALLINT":
+							Short.parseShort(data.get(i));
+							break;
+						case "INT":
+							Integer.parseInt(data.get(i));
+							break;
+						case "BIGINT_LONG":
+							Long.parseLong(data.get(i));
+							break;
+						case "DOUBLE":
+							Double.parseDouble(data.get(i));
+							break;
+					}
+
+				}
+			}
+			catch (Exception e){
+				out.println("\ndata does not match data types\n");
+				return;
+			}
+
+			insertIntoPage(0,tableFileName,data_types,data);
+		}
+		catch (Exception e){
+			out.println("\nError in parseInsert() method\n");
+			return;
+		}
+	}
+
+	/**
+	 *  @param table_row_id is the row id of the table you want the columns for
+	 *  @return An ArrayList of columns and their data retrieved from davisbase_columns
+	 */
+	public static ArrayList<column_info> get_columns(int table_row_id){
+		ArrayList<column_info> cols = new ArrayList<column_info>();
+
+		try{
+			RandomAccessFile tableFile = new RandomAccessFile(davisbase_columns, "rw");
+
+			long num_pages = tableFile.length() / pageSize; // Number of pages in tableFile
+
+			for(int i = 0; i < num_pages; i++) {
+				long start_of_page = pageSize * i;
+
+				tableFile.seek(start_of_page);
+				tableFile.skipBytes(2);// Location in header of the number of cells on the page
+
+				short num_cells_on_page = tableFile.readShort();
+
+				long start_of_cell_array = start_of_page+0x10;// Location where cell array starts
+
+				for(int j =0; j < num_cells_on_page; j++){
+					tableFile.seek(start_of_cell_array+(j*2));// What the current cell you are reading is
+
+					short cell_location = tableFile.readShort();
+
+					tableFile.seek(start_of_page+cell_location);
+					tableFile.skipBytes(2); // Skip the payload size
+					tableFile.skipBytes(4); // Skip the row_id of the record
+
+					byte num_cols = tableFile.readByte();
+
+					byte[] record_header = new byte[num_cols];
+
+					tableFile.readFully(record_header);
+
+					int record_table_row_id = tableFile.readInt(); // the row_id of the table the current column belongs to
+
+					if(record_table_row_id == table_row_id){
+						column_info col = new column_info();
+
+						byte size_of_string = record_header[1];
+						size_of_string -= TEXT;
+						byte[] b = new byte[size_of_string];
+
+						//Reads the column name
+						tableFile.readFully(b);
+						String col_name = new String(b, StandardCharsets.UTF_8);
+
+						//Reads the column data type
+						size_of_string = record_header[2];
+						size_of_string -= TEXT;
+						b = new byte[size_of_string];
+						tableFile.readFully(b);
+						String data_type = new String(b, StandardCharsets.UTF_8);
+
+						byte ordinal_pos = tableFile.readByte(); //Reads the column position
+
+						//Reads if the column is nullable
+						size_of_string = record_header[4];
+						size_of_string -= TEXT;
+						b = new byte[size_of_string];
+						tableFile.readFully(b);
+						String isnullable = new String(b, StandardCharsets.UTF_8);
+
+						//Reads the other constraints on the columns
+						size_of_string = record_header[5];
+						size_of_string -= TEXT;
+						b = new byte[size_of_string];
+						tableFile.readFully(b);
+						String col_key = new String(b, StandardCharsets.UTF_8);
+
+						col.setColumn_key(col_key);
+						col.setColumn_name(col_name);
+						col.setData_type(data_type);
+						col.setIsnullable(isnullable);
+						col.setOrdinal_position(ordinal_pos);
+						cols.add(col);
+					}
+
+
+				}
+			}
+			tableFile.close();
+
+		}catch (Exception e){
+			out.println(e);
+			return null;
+		}
+
+		return cols;
+	}
+
+	/**
+	 *  @param table_name is the name of the table you want the row_id for
+	 */
+	public static int find_table_row_id(String table_name){
+		try{
+			RandomAccessFile tableFile = new RandomAccessFile(davisbase_tables, "rw");
+
+			long num_pages = tableFile.length() / pageSize; // Number of pages in tableFile
+
+			for(int i = 0; i < num_pages; i++){
+				long start_of_page = pageSize*i;
+				tableFile.seek(start_of_page+0x02); // Location in header of the number of cells on the page
+
+				short num_cells_on_page = tableFile.readShort();
+
+				long start_of_cell_array = start_of_page+0x10;// Location where cell array starts
+
+				for(int j =0; j < num_cells_on_page; j++){
+					tableFile.seek(start_of_cell_array+(j*2));// What the current cell you are reading is
+
+					short cell_location = tableFile.readShort();
+
+					tableFile.seek(cell_location);
+					tableFile.skipBytes(2); // Skip the payload size
+					int current_row_id = tableFile.readInt(); // the row_id of the current cell
+
+					tableFile.skipBytes(1); // Skip the number of columns, since this is davisbase_tables we know there is only one column
+
+					byte size_of_string = tableFile.readByte();
+					size_of_string -= 0x0c;
+
+					byte[] b = new byte[size_of_string];
+
+					tableFile.readFully(b);
+
+					String cell_name = new String(b, StandardCharsets.UTF_8);
+
+					if(cell_name.equals(table_name)){
+						return current_row_id;
+					}
+				}
+
+			}
+			tableFile.close();
+		}catch (Exception e){
+
+		}
+		return -1;
+	}
+
 
 	/**
 	 *  Stub method for dropping tables
@@ -484,7 +738,10 @@ public class DavisBasePromptExample {
 
 			// Calculates payload_size
 			for(int i = 0; i < data.size(); i++){
-				if(data_types.get(i).toUpperCase().equals("TINYINT")){
+				if(data_types.get(i).toUpperCase().equals("NULL")){
+					payload_size += 1;
+				}
+				else if(data_types.get(i).toUpperCase().equals("TINYINT")){
 					payload_size += 1;
 				}
 				else if(data_types.get(i).toUpperCase().equals("SMALLINT")){
