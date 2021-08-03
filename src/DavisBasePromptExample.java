@@ -529,7 +529,6 @@ public class DavisBasePromptExample {
 	 */
 	public static void parseQuery(String queryString) {
 		out.println("STUB: This is the parseQuery method");
-		out.println("\tParsing the string:\"" + queryString + "\"");
 		try {
 			Map<String, String> map = Helperclass.getCondition(queryString);
 			if(map.get("condition").isEmpty()){
@@ -551,9 +550,9 @@ public class DavisBasePromptExample {
 //				String column = map.get("column");
 				String operator = map.get("operator");
 				String value = map.get("value");
-				System.out.println(operator);
-				System.out.println(value);
-				System.out.println(table_name);
+//				System.out.println(operator);
+//				System.out.println(value);
+//				System.out.println(table_name);
 
 				Filter.selectTable(file_name, Integer.parseInt(value), operator, columns);
 			} else {
