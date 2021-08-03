@@ -532,7 +532,14 @@ public class DavisBasePromptExample {
 		out.println("\tParsing the string:\"" + queryString + "\"");
 		try {
 			Map<String, String> map = Helperclass.getCondition(queryString);
+			if(map.get("condition").isEmpty()){
+				queryString = queryString.concat(" where rowid>0");
+			}
+			map = Helperclass.getCondition(queryString);
 			if (map.get("match") == "yes") {
+
+				// if no conditions attached, just show all rows
+
 				String table_name = map.get("table_name");
 
 

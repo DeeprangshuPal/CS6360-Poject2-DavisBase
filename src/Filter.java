@@ -188,7 +188,7 @@ public class Filter {
 //			System.out.println("Displaying table....");
 
 			for (int page = 0; page < pageCount; page++) {
-				// TODO check if the it's a leaf page
+				// TODO check if it's a leaf page
 				short recordCount = Pages.getCellCount(	tableFile, page);
 //				System.out.println("Record count: "+ recordCount);
 
