@@ -240,6 +240,8 @@ public class DavisBasePromptExample {
 		String s = insertString;
 		s = s.replaceAll("\\s+", " ");
 		s = s.replaceAll("\\(\\s+", "(");
+		s = s.replaceAll("\\s+\\)", ")");
+		s = s.replaceAll("values\\(", " (");
 		s = s.replaceAll(",\\s+", ",");
 		System.out.println("S" + s);
 		ArrayList<String> insertTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
