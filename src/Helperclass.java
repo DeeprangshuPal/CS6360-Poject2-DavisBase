@@ -19,7 +19,7 @@ public class Helperclass{
 	 */
 	public static Map<String, String> getCondition(String string) {
 
-		string = string.strip();
+		string = string.trim();
 		Map<String, String> map = new HashMap<>();
 		Matcher matcher = selectPattern.matcher(string);
 		boolean match = matcher.matches();
@@ -30,7 +30,7 @@ public class Helperclass{
 		}
 		matcher = selectPattern.matcher(string);
 		String table_name = string.split(" ")[2];
-		map.put("table_name", table_name.strip());
+		map.put("table_name", table_name.trim());
 		while (matcher.find()) {
 
 			for (int i = 1; i <= matcher.groupCount(); i++) {
@@ -45,7 +45,7 @@ public class Helperclass{
 					key = "table_name";
 				}
 				if (key != null) {
-					map.put(key, matcher.group(i).strip());
+					map.put(key, matcher.group(i).trim());
 				}
 			}
 		}
@@ -59,7 +59,7 @@ public class Helperclass{
 
 
 	public static void main(String[] args) {
-		String a = "select * from table where not rowid <= 5";
+		String a = "select * from table where rowid <= 5";
 		Helperclass hp = new Helperclass();
 		Map<String, String> map = hp.getCondition(a);
 		for (String name : map.keySet())

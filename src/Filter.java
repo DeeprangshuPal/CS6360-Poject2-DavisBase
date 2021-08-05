@@ -22,10 +22,10 @@ public class Filter {
 				case 0x01:
 				case 0x09:
 				case 0x08:
-					return Integer.toString(table.readByte());
+					return Byte.toString(table.readByte());
 
 				case 0x02:
-					return Integer.toString(table.readShort());
+					return Short.toString(table.readShort());
 
 				case 0x03:
 					return Integer.toString(table.readInt());
@@ -58,6 +58,81 @@ public class Filter {
 			for (int j = 0; j < stringLen; j++)
 				bytes[j] = table.readByte();
 			return new String(bytes);
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		return "";
+	}
+	
+	public static String changeData(RandomAccessFile table, int loc, byte columnDataType, String value) {
+		try {
+			SimpleDateFormat format = new SimpleDateFormat(datePattern);
+
+			table.seek(loc);
+			
+			System.out.println("Column Data Type is = "+columnDataType);
+			
+			switch (columnDataType) {
+				case 0x00:
+					return " ";
+
+				case 0x01:
+				case 0x09:
+				case 0x08:
+					table.writeByte(Byte.parseByte(value));
+					return " ";
+
+				case 0x02:
+					table.writeShort(Short.parseShort(value));
+					return " ";
+
+				case 0x03:
+					table.writeInt(Integer.parseInt(value));
+					return " ";
+
+				case 0x04:
+					table.writeLong(Long.parseLong(value));
+					return " ";
+
+				case 0x05:
+					table.writeFloat(Float.parseFloat(value));
+					return " ";
+
+				case 0x06:
+					table.writeDouble(Double.parseDouble(value));
+					return " ";
+
+
+				case 0x0A:
+					Date dateTime = new Date(table.readLong());
+					String x = format.format(dateTime);
+					table.writeLong(Long.parseLong(x));
+					return " ";
+
+
+				case 0x0B:
+					Date date = new Date(table.readLong());
+					String y = format.format(date).substring(0, 10);
+					table.writeLong(Long.parseLong(y));
+					return " ";
+//			case 0x07:  payload[i] = Long.toString(file.readLong());
+//				break;
+
+
+			}
+			
+			byte[] b = value.getBytes();
+			for (int j = 0; j < b.length; j++)
+				table.writeByte(b[j]);
+			
+			String str = " ";
+			byte[] space = str.getBytes();
+			
+			if(b.length<columnDataType-0x0C) {
+				for(int i=0; i<columnDataType-0x0C-b.length; i++)
+					table.writeByte(space[0]);
+			}
+			
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -131,6 +206,36 @@ public class Filter {
 
 				results[i] = readData(table, recordCurrentAddress, column_type);
 				recordCurrentAddress += valueSize;
+			}
+			return results;
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		return new String[0];
+	}
+	
+	public static String[] updateData(RandomAccessFile table, short address, String set_value, int column_number) {
+		try {
+			System.out.println("Inside the update code");
+			table.seek(address + 6);
+			byte numColumns = table.readByte();
+
+			short recordCurrentAddress = (short) (address + 7 + numColumns);
+			short columnTypeCurrentAddress = (short) (address + 7);
+
+			String[] results = new String[numColumns];
+
+			for (int i = 0; i < numColumns; i++) {
+				if(column_number==i) {
+				table.seek(columnTypeCurrentAddress + i);
+				byte column_type = table.readByte();
+				int valueSize = getDataTypeSize(column_type);
+				table.seek(recordCurrentAddress);
+
+				results[i] = readData(table, recordCurrentAddress, column_type);
+				changeData(table, recordCurrentAddress, column_type, set_value);
+				recordCurrentAddress += valueSize;
+				}
 			}
 			return results;
 		} catch (Exception e) {
