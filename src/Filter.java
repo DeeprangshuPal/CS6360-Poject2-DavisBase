@@ -1,5 +1,6 @@
 import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 public class Filter {
@@ -11,16 +12,14 @@ public class Filter {
 	 * get the size in bytes of the column type
 	 */
 	public static String readData(RandomAccessFile table, int loc, byte columnDataType) {
+		int stringLen = 0;
 		try {
-			SimpleDateFormat format = new SimpleDateFormat(datePattern);
-
 			table.seek(loc);
 			switch (columnDataType) {
 				case 0x00:
 					return " ";
 
 				case 0x01:
-				case 0x09:
 				case 0x08:
 					return Byte.toString(table.readByte());
 
@@ -33,27 +32,23 @@ public class Filter {
 				case 0x04:
 					return Long.toString(table.readLong());
 
+				case 0x09:
 				case 0x05:
-					return String.valueOf(table.readFloat());
+					// loading as string
+					stringLen = 4;
+					break;
 
 				case 0x06:
 					return String.valueOf(table.readDouble());
 
 
-				case 0x0A:
-					Date dateTime = new Date(table.readLong());
-					return format.format(dateTime);
-
-
 				case 0x0B:
-					Date date = new Date(table.readLong());
-					return format.format(date).substring(0, 10);
-//			case 0x07:  payload[i] = Long.toString(file.readLong());
-//				break;
-
-
+				case 0x0A:
+					stringLen = 8;
+					break;
+				default:
+					stringLen = columnDataType - 0x0C;
 			}
-			int stringLen = columnDataType - 0x0C;
 			byte[] bytes = new byte[stringLen];
 			for (int j = 0; j < stringLen; j++)
 				bytes[j] = table.readByte();
@@ -63,80 +58,79 @@ public class Filter {
 		}
 		return "";
 	}
-	
-	public static String changeData(RandomAccessFile table, int loc, byte columnDataType, String value) {
+
+	public static void changeData(RandomAccessFile table, int loc, byte columnDataType, String value) {
 		try {
-			SimpleDateFormat format = new SimpleDateFormat(datePattern);
 
 			table.seek(loc);
-			
-			System.out.println("Column Data Type is = "+columnDataType);
-			
+
+			System.out.println("Column Data Type is = " + columnDataType);
+			int maxByte = 0;
+
 			switch (columnDataType) {
 				case 0x00:
-					return " ";
+					return;
 
 				case 0x01:
-				case 0x09:
 				case 0x08:
 					table.writeByte(Byte.parseByte(value));
-					return " ";
+					return;
 
 				case 0x02:
 					table.writeShort(Short.parseShort(value));
-					return " ";
+					return;
 
 				case 0x03:
 					table.writeInt(Integer.parseInt(value));
-					return " ";
+					return;
 
 				case 0x04:
 					table.writeLong(Long.parseLong(value));
-					return " ";
+					return;
 
+				case 0x09:
 				case 0x05:
-					table.writeFloat(Float.parseFloat(value));
-					return " ";
+					maxByte = 4;
+//					table.write(value.getBytes());
+//					table.writeFloat(Float.parseFloat(value));
+					break;
 
 				case 0x06:
 					table.writeDouble(Double.parseDouble(value));
-					return " ";
+					return;
 
 
 				case 0x0A:
-					Date dateTime = new Date(table.readLong());
-					String x = format.format(dateTime);
-					table.writeLong(Long.parseLong(x));
-					return " ";
-
-
 				case 0x0B:
-					Date date = new Date(table.readLong());
-					String y = format.format(date).substring(0, 10);
-					table.writeLong(Long.parseLong(y));
-					return " ";
+					maxByte = 8;
+					break;
+
+				default:
+					maxByte = columnDataType - 0x0C;
+					break;
+
+
 //			case 0x07:  payload[i] = Long.toString(file.readLong());
 //				break;
 
 
 			}
-			
+
 			byte[] b = value.getBytes();
 			for (int j = 0; j < b.length; j++)
 				table.writeByte(b[j]);
-			
+
 			String str = " ";
 			byte[] space = str.getBytes();
-			
-			if(b.length<columnDataType-0x0C) {
-				for(int i=0; i<columnDataType-0x0C-b.length; i++)
+
+			if (b.length < maxByte) {
+				for (int i = 0; i < maxByte - b.length; i++)
 					table.writeByte(space[0]);
 			}
-			
+
 		} catch (Exception e) {
 			System.out.println(e);
 		}
-		return "";
 	}
 
 	/**
@@ -188,7 +182,7 @@ public class Filter {
 	 * @param address
 	 * @return
 	 */
-	public static String[] getRecordData(RandomAccessFile table, short address) {
+	public static String[] getRecordData(RandomAccessFile table, short address, int rowid, int[] positions) {
 		try {
 			table.seek(address + 6);
 			byte numColumns = table.readByte();
@@ -196,15 +190,33 @@ public class Filter {
 			short recordCurrentAddress = (short) (address + 7 + numColumns);
 			short columnTypeCurrentAddress = (short) (address + 7);
 
-			String[] results = new String[numColumns];
+			String[] results;
+			if (positions.length == 0) {
+				results = new String[numColumns + 1];
+			} else {
+				results = new String[positions.length + 1];
+			}
+
+			results[0] = Integer.toString(rowid);
+
+			int j = 0;
 
 			for (int i = 0; i < numColumns; i++) {
 				table.seek(columnTypeCurrentAddress + i);
 				byte column_type = table.readByte();
 				int valueSize = getDataTypeSize(column_type);
 				table.seek(recordCurrentAddress);
-
-				results[i] = readData(table, recordCurrentAddress, column_type);
+				if (positions.length == 0) {
+					results[i + 1] = readData(table, recordCurrentAddress, column_type);
+				} else {
+					if (positions[j] == i) {
+						results[j + 1] = readData(table, recordCurrentAddress, column_type);
+						j++;
+						if (j >= positions.length) {
+							break;
+						}
+					}
+				}
 				recordCurrentAddress += valueSize;
 			}
 			return results;
@@ -213,8 +225,8 @@ public class Filter {
 		}
 		return new String[0];
 	}
-	
-	public static String[] updateData(RandomAccessFile table, short address, String set_value, int column_number) {
+
+	public static void updateData(RandomAccessFile table, short address, String set_value, int column_number) {
 		try {
 			System.out.println("Inside the update code");
 			table.seek(address + 6);
@@ -223,45 +235,43 @@ public class Filter {
 			short recordCurrentAddress = (short) (address + 7 + numColumns);
 			short columnTypeCurrentAddress = (short) (address + 7);
 
-			String[] results = new String[numColumns];
 
 			for (int i = 0; i < numColumns; i++) {
-				if(column_number==i) {
 				table.seek(columnTypeCurrentAddress + i);
 				byte column_type = table.readByte();
 				int valueSize = getDataTypeSize(column_type);
 				table.seek(recordCurrentAddress);
-
-				results[i] = readData(table, recordCurrentAddress, column_type);
-				changeData(table, recordCurrentAddress, column_type, set_value);
-				recordCurrentAddress += valueSize;
+				if (column_number == i) {
+					changeData(table, recordCurrentAddress, column_type, set_value);
 				}
+				recordCurrentAddress += valueSize;
 			}
-			return results;
 		} catch (Exception e) {
 			System.out.println(e);
 		}
-		return new String[0];
 	}
 
-	public static void displayRow(String[] row) {
+	public static void displayRow(String[] row, boolean includeRowId) {
 //		for (int i = 0; i < row.length; i++) {
-		int l = row.length;
-		System.out.format("%15s".repeat(l) + "%n", row);
+		try {
+			int l = row.length;
+			if (includeRowId) {
+				System.out.format(" ".repeat(10) + "rowid" + "%15s".repeat(l) + "%n", row);
+			} else {
+				System.out.format("%15s".repeat(l) + "%n", row);
+			}
+		} catch (Exception e) {
+			System.out.println("");
+		}
 	}
 
-
-	// TODO implement
-	public static boolean compareValue(String input, String currentValue, String operator) {
-		return true;
-	}
 
 	public static boolean compareRowId(int input, int currentValue, String operator) {
 		boolean flag = false;
 
 		if (operator.equals("=")) {
 			flag = (input == currentValue) ? true : false;
-		} else if (operator.equals( ">")) {
+		} else if (operator.equals(">")) {
 			flag = (input > currentValue) ? true : false;
 		} else if (operator.equals(">=")) {
 			flag = (input >= currentValue) ? true : false;
@@ -277,25 +287,67 @@ public class Filter {
 
 
 	/**
+	 * columns: columns in the table
+	 * userColumns: columns requested by user
+	 */
+	public static int[] getColumnPositions(String[] columns, String[] userColumns) {
+		int[] positions = new int[userColumns.length];
+
+
+		for (int i = 0; i < userColumns.length; i++) {
+
+			for (int j = 0; j < columns.length; j++) {
+				if (columns[j].equalsIgnoreCase(userColumns[i]) && !userColumns[i].equalsIgnoreCase("rowid")) {
+					positions[i] = j;
+				}
+			}
+
+
+		}
+
+		if (positions.length != userColumns.length) {
+			System.out.println("Couldn't find all columns. Please check the column list entered!");
+		}
+		Arrays.sort(positions);
+		return positions;
+	}
+
+	public static String[] getSortedColumns(String[] columns, int[] positions) {
+		String[] sortedColumns = new String[positions.length];
+		int i = 0;
+		int j = 0;
+		while (i < columns.length && j < positions.length) {
+			if (i == positions[j]) {
+				sortedColumns[j] = columns[i];
+				j++;
+			}
+			i++;
+		}
+		return sortedColumns;
+	}
+
+
+	/**
 	 * Select records with given rowIdValue and operator
 	 *
 	 * @param-s are self-explanatory
+	 * columns: columns in the table
+	 * userColumns: columns requested by user
 	 */
-	public static void selectTable(String file_name, int rowIdValue, String operator, String[] columns) {
+	public static void selectTable(String file_name, int rowIdValue, String operator, String[] columns, String[] userColumns) {
 		// load file. parse through each page and each record in a page. if row_id match is found then display
+		int[] positions = getColumnPositions(columns, userColumns);
+		userColumns = getSortedColumns(columns, positions);
 
 		try {
 			RandomAccessFile tableFile = new RandomAccessFile(file_name, "rw");
 			int pageCount = Pages.getPageCount(tableFile);
-			System.out.println("Page count: " + pageCount);
-			displayRow(columns);
+			displayRow(userColumns, true);
 
-//			System.out.println("Displaying table....");
 
 			for (int page = 0; page < pageCount; page++) {
 				// TODO check if it's a leaf page
-				short recordCount = Pages.getCellCount(	tableFile, page);
-//				System.out.println("Record count: "+ recordCount);
+				short recordCount = Pages.getCellCount(tableFile, page);
 
 				for (int j = 0; j < recordCount; j++) {
 					short cell_offset = Pages.getCellAddress(tableFile, page, j);
@@ -303,12 +355,11 @@ public class Filter {
 					// go to record location. +2 for the payload size
 					tableFile.seek(cell_offset + 2);
 					int rowid = tableFile.readInt();
-//					System.out.println("Row id: " + rowid);
 
 
 					if (compareRowId(rowid, rowIdValue, operator)) {
-						String[] rc = getRecordData(tableFile, cell_offset);
-						displayRow(rc);
+						String[] rc = getRecordData(tableFile, cell_offset, rowid, positions);
+						displayRow(rc, false);
 					}
 				}
 			}

@@ -251,11 +251,11 @@ public class DavisBasePromptExample {
 		String col_names;
 		String values_string;
 
-		try{
+		try {
 			table_name = insertTableTokens.get(4);
 			col_names = insertTableTokens.get(3);
 			values_string = insertTableTokens.get(6);
-		}catch(Exception e){
+		} catch (Exception e) {
 
 			out.println("\nError in insertion : did not follow the correct syntax");
 			out.println("Syntax : INSERT INTO TABLE (column_list) table_name VALUES (value1,value2,value3, ...);\n");
@@ -523,6 +523,7 @@ public class DavisBasePromptExample {
 		return columns;
 	}
 
+
 	/**
 	 * Stub method for executing queries
 	 *
@@ -532,30 +533,36 @@ public class DavisBasePromptExample {
 		out.println("STUB: This is the parseQuery method");
 		try {
 			Map<String, String> map = Helperclass.getCondition(queryString);
-			if(map.get("condition").isEmpty()){
+			if (map.get("condition").isEmpty()) {
 				queryString = queryString.concat(" where rowid>0");
 			}
+			if (!map.containsKey("show_columns") || map.get("show_columns").isEmpty()) {
+				System.out.println("Invalid command. Please specify * or name of columns!");
+				return;
+			}
+
 			map = Helperclass.getCondition(queryString);
 			if (map.get("match") == "yes") {
 
 				// if no conditions attached, just show all rows
 
 				String table_name = map.get("table_name");
-
-
 				String[] columns = getStringColumns(table_name);
+
+				String[] userColumns;
+				if (map.get("show_columns").equals("*")) {
+					userColumns = columns;
+				} else {
+					userColumns = map.get("show_columns").replaceAll(",\s*rowid", "").replaceAll("rowid\s*,", "").split("\s*,\s*");
+				}
 
 
 				String file_name = "data/" + table_name + ".tbl";
 
-//				String column = map.get("column");
 				String operator = map.get("operator");
 				String value = map.get("value");
-//				System.out.println(operator);
-//				System.out.println(value);
-//				System.out.println(table_name);
 
-				Filter.selectTable(file_name, Integer.parseInt(value), operator, columns);
+				Filter.selectTable(file_name, Integer.parseInt(value), operator, columns, userColumns);
 			} else {
 				out.println("Invalid Select Command!!");
 			}
@@ -579,9 +586,8 @@ public class DavisBasePromptExample {
 	 * @param updateString is a String of the user input
 	 */
 	public static void parseUpdate(String updateString) {
-		System.out.println("STUB: This is the dropTable method");
 		System.out.println("Parsing the string:\"" + updateString + "\"");
-		
+
 		try {
 			Map<String, String> map = HPClass.getCondition(updateString);
 			if (map.get("match") == "yes") {
@@ -591,33 +597,33 @@ public class DavisBasePromptExample {
 				String[] columns = getStringColumns(table_name);
 
 				String file_name = "data/" + table_name + ".tbl";
-				
+
 				//String operator1 = map.get("operator1");
 				String operator1_value = map.get("operator1_value");
 				String operator2 = map.get("operator2");
 				String operator2_value = map.get("operator2_value");
 				String column_name = map.get("column_name");
-				
-				int i=0;
-				for(i=0; i<columns.length; i++) {
-					if(columns[i].equals(column_name)) {
-							System.out.println(columns[i]);
-				            break;
+
+				int i = 0;
+				for (i = 0; i < columns.length; i++) {
+					if (columns[i].equals(column_name)) {
+						System.out.println(columns[i]);
+						break;
 					}
 				}
 				int column_number = i;
-				            
-				System.out.println("The correct column number is "+column_number);
-				
+
+				System.out.println("The correct column number is " + column_number);
+
 				int rowIdValue = Integer.parseInt(operator2_value);
-				
+
 				RandomAccessFile tableFile = new RandomAccessFile(file_name, "rw");
 				int pageCount = Pages.getPageCount(tableFile);
 				//System.out.println("The page count is = "+ pageCount);
 
 				for (int page = 0; page < pageCount; page++) {
 					// TODO check if the it's a leaf page
-					short recordCount = Pages.getCellCount(	tableFile, page);
+					short recordCount = Pages.getCellCount(tableFile, page);
 					//System.out.println("The record count is = "+ recordCount);
 
 					for (int j = 0; j < recordCount; j++) {
@@ -629,7 +635,7 @@ public class DavisBasePromptExample {
 
 
 						if (Filter.compareRowId(rowid, rowIdValue, operator2)) {
-						System.out.println("The update is working");
+							System.out.println("The update is working");
 							Filter.updateData(tableFile, cell_offset, operator1_value, column_number);
 						}
 					}

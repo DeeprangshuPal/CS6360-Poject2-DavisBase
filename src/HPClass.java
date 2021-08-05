@@ -4,11 +4,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HPClass{
-	static long pageSize = 512;
-	//final static String selectRegex = "(?i)SELECT\\s+.+\\s+FROM\\s+([\\w]+)\\s+WHERE(\\s+NOT)?(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+))";
-	final static String selectRegex = "(?i)UPDATE\\s+([\\w]+)\\s+SET\\s+([\\w]+)\\s*(>=|<=|<>|=|>|<)+\\s*(.+)\\s+WHERE(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+))";
-	public static final String datePattern = "yyyy-MM-dd_HH:mm:ss";
-	public static Pattern selectPattern = Pattern.compile(selectRegex, Pattern.MULTILINE);
+	final static String updateRegex = "(?i)UPDATE\\s+([\\w]+)\\s+SET\\s+([\\w]+)\\s*(>=|<=|<>|=|>|<)+\\s*(.+)\\s+WHERE(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+))";
+	public static Pattern updatePattern = Pattern.compile(updateRegex, Pattern.MULTILINE);
 	/**
 	 * Get update query parameters by matching to a regex
 	 *
@@ -20,14 +17,13 @@ public class HPClass{
 		string = string.trim();
 		//using trim() instead of split()
 		Map<String, String> map = new HashMap<>();
-		Matcher matcher = selectPattern.matcher(string);
+		Matcher matcher = updatePattern.matcher(string);
 		boolean match = matcher.matches();
 		if (match) {
 			map.put("match", "yes");
 		} else {
 			map.put("match", "no");
 		}
-		matcher = selectPattern.matcher(string);
 		String table_name = string.split(" ")[1];
 		map.put("table_name", table_name.trim());
 		String column_name = string.split(" ")[3];

@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public class Helperclass{
 	static long pageSize = 512;
-	final static String selectRegex = "(?i)SELECT\\s+.+\\s+FROM\\s+([\\w]+)(\\s+WHERE(\\s+NOT)?(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+)))?";
+	final static String selectRegex = "(?i)SELECT\\s+(.+)\\s+FROM\\s+([\\w]+)(\\s+WHERE(\\s+NOT)?(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+)))?";
 	public static final String datePattern = "yyyy-MM-dd_HH:mm:ss";
 	public static String showRegex = "(?i)SHOW\\s+TABLES";
 	public static Pattern selectPattern = Pattern.compile(selectRegex, Pattern.MULTILINE);
@@ -35,16 +35,18 @@ public class Helperclass{
 
 			for (int i = 1; i <= matcher.groupCount(); i++) {
 				String key = null;
-				if (i == 5) {
+				if (i == 6) {
 					key = "column";
-				} else if (i == 6) {
-					key = "operator";
 				} else if (i == 7) {
+					key = "operator";
+				} else if (i == 8) {
 					key = "value";
-				} else if (i == 1) {
+				} else if (i == 2) {
 					key = "table_name";
-				}else if (i ==2){
+				}else if (i ==3){
 					key = "condition";
+				}else if (i ==1){
+					key = "show_columns";
 				}
 				if (key != null) {
 					String val = matcher.group(i);
