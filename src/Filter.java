@@ -245,10 +245,9 @@ public class Filter {
 	}
 
 	public static void displayRow(String[] row) {
-		for (int i = 0; i < row.length; i++) {
-			System.out.print(row[i] + "\t");
-		}
-		System.out.println("\n");
+//		for (int i = 0; i < row.length; i++) {
+		int l = row.length;
+		System.out.format("%15s".repeat(l) + "%n", row);
 	}
 
 
@@ -291,10 +290,10 @@ public class Filter {
 			System.out.println("Page count: " + pageCount);
 			displayRow(columns);
 
-			System.out.println("Displaying table....");
+//			System.out.println("Displaying table....");
 
 			for (int page = 0; page < pageCount; page++) {
-				// TODO check if the it's a leaf page
+				// TODO check if it's a leaf page
 				short recordCount = Pages.getCellCount(	tableFile, page);
 //				System.out.println("Record count: "+ recordCount);
 

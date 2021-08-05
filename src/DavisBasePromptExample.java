@@ -241,6 +241,8 @@ public class DavisBasePromptExample {
 		String s = insertString;
 		s = s.replaceAll("\\s+", " ");
 		s = s.replaceAll("\\(\\s+", "(");
+		s = s.replaceAll("\\s+\\)", ")");
+		s = s.replaceAll("values\\(", " (");
 		s = s.replaceAll(",\\s+", ",");
 		System.out.println("S" + s);
 		ArrayList<String> insertTableTokens = new ArrayList<String>(Arrays.asList(s.split(" ")));
@@ -528,10 +530,16 @@ public class DavisBasePromptExample {
 	 */
 	public static void parseQuery(String queryString) {
 		out.println("STUB: This is the parseQuery method");
-		out.println("\tParsing the string:\"" + queryString + "\"");
 		try {
 			Map<String, String> map = Helperclass.getCondition(queryString);
+			if(map.get("condition").isEmpty()){
+				queryString = queryString.concat(" where rowid>0");
+			}
+			map = Helperclass.getCondition(queryString);
 			if (map.get("match") == "yes") {
+
+				// if no conditions attached, just show all rows
+
 				String table_name = map.get("table_name");
 
 
@@ -543,9 +551,9 @@ public class DavisBasePromptExample {
 //				String column = map.get("column");
 				String operator = map.get("operator");
 				String value = map.get("value");
-				System.out.println(operator);
-				System.out.println(value);
-				System.out.println(table_name);
+//				System.out.println(operator);
+//				System.out.println(value);
+//				System.out.println(table_name);
 
 				Filter.selectTable(file_name, Integer.parseInt(value), operator, columns);
 			} else {

@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public class Helperclass{
 	static long pageSize = 512;
-	final static String selectRegex = "(?i)SELECT\\s+.+\\s+FROM\\s+([\\w]+)\\s+WHERE(\\s+NOT)?(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+))";
+	final static String selectRegex = "(?i)SELECT\\s+.+\\s+FROM\\s+([\\w]+)(\\s+WHERE(\\s+NOT)?(\\s+(ROWID)\\s*(>=|<=|<>|=|>|<)+\\s*(.+)))?";
 	public static final String datePattern = "yyyy-MM-dd_HH:mm:ss";
 	public static String showRegex = "(?i)SHOW\\s+TABLES";
 	public static Pattern selectPattern = Pattern.compile(selectRegex, Pattern.MULTILINE);
@@ -35,17 +35,24 @@ public class Helperclass{
 
 			for (int i = 1; i <= matcher.groupCount(); i++) {
 				String key = null;
-				if (i == 4) {
+				if (i == 5) {
 					key = "column";
-				} else if (i == 5) {
-					key = "operator";
 				} else if (i == 6) {
+					key = "operator";
+				} else if (i == 7) {
 					key = "value";
 				} else if (i == 1) {
 					key = "table_name";
+				}else if (i ==2){
+					key = "condition";
 				}
 				if (key != null) {
-					map.put(key, matcher.group(i).trim());
+					String val = matcher.group(i);
+					if (val != null) {
+						map.put(key, val.strip());
+					}else{
+						map.put(key, "");
+					}
 				}
 			}
 		}
@@ -59,7 +66,7 @@ public class Helperclass{
 
 
 	public static void main(String[] args) {
-		String a = "select * from table where rowid <= 5";
+		String a = "select * from table where not rowid <= 5";
 		Helperclass hp = new Helperclass();
 		Map<String, String> map = hp.getCondition(a);
 		for (String name : map.keySet())
